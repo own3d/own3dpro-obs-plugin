@@ -1,0 +1,11 @@
+{
+  "name": "scene-converter",
+  "version": "1.0.0",
+  "description": "Converts OBS Studio JSON Scene Exports into a portable format",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Own3d.tv",
+  "license": "SEE LICENSE IN LICENSE"
+}

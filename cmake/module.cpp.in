@@ -1,0 +1,24 @@
+#ifdef _MSC_VER
+#pragma warning(push)
+#pragma warning(disable : 4201)
+#endif
+#include <obs.h>
+#include <obs-module.h>
+#ifdef _MSC_VER
+#pragma warning(pop)
+#endif
+
+OBS_DECLARE_MODULE();
+OBS_MODULE_AUTHOR("@PROJECT_AUTHORS@");
+OBS_MODULE_USE_DEFAULT_LOCALE("@PROJECT_NAME@", "en-US");
+
+MODULE_EXPORT const char* obs_module_name()
+{
+	return "@PROJECT_FULL_NAME@";
+}
+
+
+MODULE_EXPORT const char* obs_module_description()
+{
+	return "@PROJECT_DESCRIPTION@";
+}
