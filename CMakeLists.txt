@@ -16,15 +16,14 @@
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA
 
 # CMake Setup
-cmake_minimum_required(VERSION 3.8.0)
+cmake_minimum_required(VERSION 3.12.0)
 
 # Automatic Versioning
 set(VERSION_MAJOR 0)
-set(VERSION_MINOR 0)
+set(VERSION_MINOR 1)
 set(VERSION_PATCH 0)
 set(VERSION_TWEAK 0)
 set(VERSION_SUFFIX "")
-set(PROJECT_COMMIT "N/A")
 if(EXISTS "${CMAKE_CURRENT_LIST_DIR}/.git")
 	set(GIT_RESULT "")
 	set(GIT_OUTPUT "")
@@ -49,13 +48,18 @@ if(EXISTS "${CMAKE_CURRENT_LIST_DIR}/.git")
 		set(PROJECT_COMMIT ${GIT_OUTPUT})
 	endif()
 endif()
+if(PROJECT_COMMIT)
+	set(VERSION_STRING "${VERSION_MAJOR}.${VERSION_MINOR}.${VERSION_PATCH}.${VERSION_TWEAK}${VERSION_SUFFIX}-${PROJECT_COMMIT}")
+else()
+	set(VERSION_STRING "${VERSION_MAJOR}.${VERSION_MINOR}.${VERSION_PATCH}.${VERSION_TWEAK}${VERSION_SUFFIX}")
+endif()
 
 # Define Project
 project(
-	own3d-tv
+	own3d
 	VERSION ${VERSION_MAJOR}.${VERSION_MINOR}.${VERSION_PATCH}.${VERSION_TWEAK}
 )
-set(PROJECT_FULL_NAME "Own3d.TV for OBS Studio")
+set(PROJECT_FULL_NAME "OWN3D for OBS Studio")
 set(PROJECT_DESCRIPTION "")
 set(PROJECT_AUTHORS "")
 set(PROJECT_COPYRIGHT_YEARS "2020")
@@ -69,7 +73,7 @@ set(CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake/clang" "${CMAKE_CURRENT
 
 # CMake Modules
 include("util")
-if (EXISTS "${CMAKE_SOURCE_DIR}/cmake/Clang/Clang.cmake")
+if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/cmake/Clang/Clang.cmake")
 	include("Clang")
 	set(HAVE_CLANG ON)
 endif()
@@ -90,59 +94,6 @@ else()
 	set(ARCH "x64")
 endif()
 
-# All Warnings, Extra Warnings, Pedantic
-if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
-	# using Clang
-	set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -Wno-missing-braces -Wmissing-field-initializers -Wno-c++98-compat-pedantic -Wold-style-cast -Wno-documentation -Wno-documentation-unknown-command -Wno-covered-switch-default -Wno-switch-enum")
-	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wno-missing-braces -Wmissing-field-initializers -Wno-c++98-compat-pedantic -Wold-style-cast -Wno-documentation -Wno-documentation-unknown-command -Wno-covered-switch-default -Wno-switch-enum")
-elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
-	# GCC: -fpermissive is required as GCC does not allow the same template to be in different namespaces.
-	set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -Wpedantic -fpermissive -Wno-long-long -Wno-missing-braces -Wmissing-field-initializers")
-	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wpedantic -fpermissive -Wno-long-long -Wno-missing-braces -Wmissing-field-initializers")
-elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Intel")
-	# using Intel C++
-elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC")
-	set(MSVC_EXTRA_FLAGS "/wd4061 /wd4100 /wd4180 /wd4201 /wd4464 /wd4505 /wd4514 /wd4571 /wd4623 /wd4625 /wd4626 /wd4710 /wd4774 /wd4820 /wd5026 /wd5027 /wd5045")
-	# Force to always compile with W4
-	if(CMAKE_CXX_FLAGS MATCHES "/W[0-4]")
-		string(REGEX REPLACE "/W[0-4]" "/Wall" CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
-	else()
-		set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /Wall")
-	endif()
-	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${MSVC_EXTRA_FLAGS}")
-	
-	if(CMAKE_C_FLAGS MATCHES "/W[0-4]")
-		string(REGEX REPLACE "/W[0-4]" "/Wall" CMAKE_C_FLAGS "${CMAKE_C_FLAGS}")
-	else()
-		set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} /Wall")
-	endif()
-	set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${MSVC_EXTRA_FLAGS}")
-
-	if("${PropertyPrefix}" STREQUAL "")
-		# Speed Optimized Configuration
-		set(_SPEED_COMPILER_FLAGS "/O2 /Oi /Ot /Oy /GF /GS- /Qpar /arch:AVX /GR /GL")
-		set(_SPEED_LINKER_FLAGS "/LTCG:incremental /OPT:ICF=4 /INCREMENTAL /OPT:REF")
-		set(CMAKE_CXX_FLAGS_SPEED "${CMAKE_CXX_FLAGS_RELWTIHDEBINFO} ${_SPEED_COMPILER_FLAGS}")
-		set(CMAKE_C_FLAGS_SPEED "${CMAKE_C_FLAGS_RELWTIHDEBINFO} ${_SPEED_COMPILER_FLAGS}")
-		set(CMAKE_EXE_LINKER_FLAGS_SPEED "${CMAKE_EXE_LINKER_FLAGS_RELWTIHDEBINFO} ${_SPEED_LINKER_FLAGS}")
-		set(CMAKE_SHARED_LINKER_FLAGS_SPEED "${CMAKE_EXE_LINKER_FLAGS_RELWTIHDEBINFO} ${_SPEED_LINKER_FLAGS}")
-		set(CMAKE_MODULE_LINKER_FLAGS_SPEED "${CMAKE_EXE_LINKER_FLAGS_RELWTIHDEBINFO} ${_SPEED_LINKER_FLAGS}")
-		mark_as_advanced(
-			CMAKE_CXX_FLAGS_SPEED
-			CMAKE_C_FLAGS_SPEED
-			CMAKE_EXE_LINKER_FLAGS_SPEED
-			CMAKE_SHARED_LINKER_FLAGS_SPEED
-			CMAKE_MODULE_LINKER_FLAGS_SPEED
-		)
-
-		if(CMAKE_CONFIGURATION_TYPES)
-			list(APPEND CMAKE_CONFIGURATION_TYPES Speed)
-			list(REMOVE_DUPLICATES CMAKE_CONFIGURATION_TYPES)
-			CacheSet(CMAKE_CONFIGURATION_TYPES "${CMAKE_CONFIGURATION_TYPES}")
-		endif()
-	endif()
-endif()
-
 # C++ Standard and Extensions
 ## Use C++17 and no non-standard extensions.
 set(_CXX_STANDARD 17)
@@ -161,6 +112,9 @@ mark_as_advanced(FORCE OBS_NATIVE OBS_PACKAGE OBS_REFERENCE OBS_DOWNLOAD)
 if(TARGET libobs)
 	message(STATUS "${PROJECT_NAME}: Using native obs-studio.")
 	CacheSet(${PropertyPrefix}OBS_NATIVE TRUE)
+	if (TARGET obs-frontend-api)
+		set(HAVE_OBS_FRONTEND TRUE)
+	endif()
 else()
 	message(STATUS "${PROJECT_NAME}: Using packaged or remote obs-studio.")
 	CacheSet(${PropertyPrefix}OBS_NATIVE FALSE)
@@ -169,12 +123,11 @@ else()
 	set(CMAKE_PACKAGE_NAME "${PROJECT_NAME}" CACHE STRING "Name for the generated archives.")
 	set(CMAKE_PACKAGE_SUFFIX_OVERRIDE "" CACHE STRING "Override for the suffix.")
 
-	if(${PropertyPrefix}OBS_DOWNLOAD)
-		set(${PropertyPrefix}OBS_DOWNLOAD_VERSION "24.0.3" CACHE STRING "OBS Studio Version to download")
-		set(${PropertyPrefix}OBS_DEPENDENCIES_VERSION "24.0.0" CACHE STRING "OBS Studio Version to download")
-		set(${PropertyPrefix}OBS_DOWNLOAD_URL "https://github.com/Xaymar/obs-studio/releases/download/${OBS_DOWNLOAD_VERSION}-ci/obs-studio-${ARCH}-0.0.0.0-vs2017.7z")
-		set(${PropertyPrefix}OBS_DEPENDENCIES_URL "https://cdn.xaymar.com/obs/dependencies_${OBS_DEPENDENCIES_VERSION}.zip")
-	else()
+	if(UNIX)
+		set(UNIX_LOCAL_STRUCTURE TRUE CACHE BOOL "Package for a local linux install.")
+	endif()
+
+	if(NOT ${PropertyPrefix}OBS_DOWNLOAD)
 		set(${PropertyPrefix}OBS_STUDIO_DIR "" CACHE PATH "OBS Studio Source/Package Directory")
 		set(${PropertyPrefix}OBS_DEPENDENCIES_DIR "" CACHE PATH "OBS Studio Dependencies Directory")
 		if(EXISTS "${OBS_STUDIO_DIR}/cmake/LibObs/LibObsConfig.cmake")
@@ -184,8 +137,8 @@ else()
 			message(STATUS "${PROJECT_NAME}: Using referenced obs-studio.")
 			CacheSet(${PropertyPrefix}OBS_REFERENCE TRUE)
 		else()
-			message(FATAL_ERROR "${PROJECT_NAME}: No OBS Studio detected. If you wish to continue, either check ${PropertyPrefix}OBS_DOWNLOAD or fix your configuration")
-			return()
+			message(FATAL_ERROR "${PROJECT_NAME}: No OBS Studio detected. Automatically setting ${PropertyPrefix}OBS_DOWNLOAD...")
+			CacheSet(${PropertyPrefix}OBS_DOWNLOAD TRUE)
 		endif()
 	endif()
 endif()
@@ -196,17 +149,17 @@ endif()
 
 # Configure Version Header
 configure_file(
-	"${PROJECT_SOURCE_DIR}/cmake/version.hpp.in"
+	"cmake/version.hpp.in"
 	"${PROJECT_BINARY_DIR}/source/version.hpp"
 )
 configure_file(
-	"${PROJECT_SOURCE_DIR}/cmake/module.cpp.in"
+	"cmake/module.cpp.in"
 	"${PROJECT_BINARY_DIR}/source/module.cpp"
 )
 
 # Packaging
 if("${CMAKE_PACKAGE_SUFFIX_OVERRIDE}" STREQUAL "")
-	set(_PACKAGE_SUFFIX_OVERRIDE "${PROJECT_VERSION}${VERSION_SUFFIX}-${PROJECT_COMMIT}")
+	set(_PACKAGE_SUFFIX_OVERRIDE "${VERSION_STRING}")
 else()
 	set(_PACKAGE_SUFFIX_OVERRIDE "${CMAKE_PACKAGE_SUFFIX_OVERRIDE}")
 endif()
@@ -222,7 +175,7 @@ if(WIN32)
 	get_filename_component(ISS_SOURCE_DIR "${PROJECT_SOURCE_DIR}" ABSOLUTE)
 	file(TO_NATIVE_PATH "${ISS_SOURCE_DIR}" ISS_SOURCE_DIR)
 	configure_file(
-		"${PROJECT_SOURCE_DIR}/cmake/installer.iss.in"
+		"cmake/installer.iss.in"
 		"${PROJECT_BINARY_DIR}/installer.iss"
 	)
 
@@ -234,7 +187,7 @@ if(WIN32)
 	set(PROJECT_LEGAL_TRADEMARKS_2 "")
 	
 	configure_file(
-		"${PROJECT_SOURCE_DIR}/cmake/version.rc.in"
+		"cmake/version.rc.in"
 		"${PROJECT_BINARY_DIR}/cmake/version.rc"
 		@ONLY
 	)	
@@ -244,83 +197,246 @@ endif()
 if(${PropertyPrefix}OBS_DOWNLOAD)
 	include("DownloadProject")
 	
-	download_project(
-		PROJ libobs
-		URL ${OBS_DOWNLOAD_URL}
-		UPDATE_DISCONNECTED 1
-	)
-	
-	download_project(
-		PROJ obsdeps
-		URL ${OBS_DEPENDENCIES_URL}
-		UPDATE_DISCONNECTED 1
-	)
+	set(OBS_DOWNLOAD_VERSION "25.0.3-fe-ci")
+	if(WIN32)
+		# Windows
+		set(OBS_DEPENDENCIES_VERSION "25.0.0")
+		set(OBS_QT_VERSION "5.10.1")
+
+		download_project(
+			PROJ libobs
+			URL https://github.com/Xaymar/obs-studio/releases/download/${OBS_DOWNLOAD_VERSION}/obs-studio-${ARCH}-0.0.0.0-vs2019.7z
+			UPDATE_DISCONNECTED 1
+		)
+
+		download_project(
+			PROJ obsdeps
+			URL https://cdn.xaymar.com/obs/dependencies_${OBS_DEPENDENCIES_VERSION}.7z
+			UPDATE_DISCONNECTED 1
+		)
+	elseif(UNIX)
+		# Unix, Linux
+		download_project(
+			PROJ libobs
+			URL https://github.com/Xaymar/obs-studio/releases/download/${OBS_DOWNLOAD_VERSION}/obs-studio-${ARCH}-0.0.0.0-ubuntu1804.7z
+			UPDATE_DISCONNECTED 1
+		)
+
+		# Dependencies must be installed like normal OBS Studio
+		message("Linux builds require your install the necessary development packages, take a look at the obs-studio build guide for them.")
+	else()
+		# Other OS
+		message(FATAL "Unable to download libOBS as this Operating System is not yet supported.")
+	endif()
 endif()
 
 # Load OBS Studio & Dependencies
 if(${PropertyPrefix}OBS_PACKAGE)
 	include("${OBS_STUDIO_DIR}/cmake/LibObs/LibObsConfig.cmake")
+	if (EXISTS "${OBS_STUDIO_DIR}/cmake/obs-frontend-api/obs-frontend-apiConfig.cmake")
+		include("${OBS_STUDIO_DIR}/cmake/obs-frontend-api/obs-frontend-apiConfig.cmake")
+		set(HAVE_OBS_FRONTEND TRUE)
+	endif()
 elseif(${PropertyPrefix}OBS_REFERENCE)
 	set(obsPath "${OBS_STUDIO_DIR}")
 	include("${OBS_STUDIO_DIR}/cmake/external/FindLibobs.cmake")
 elseif(${PropertyPrefix}OBS_DOWNLOAD)
-	include("${libobs_SOURCE_DIR}/cmake/LibObs/LibObsConfig.cmake")
+	set(_INCLUDE_PREFIX "")
+	if(WIN32)
+		set(_INCLUDE_PREFIX "${libobs_SOURCE_DIR}/cmake")
+	elseif(UNIX)
+		set(_INCLUDE_PREFIX "${libobs_SOURCE_DIR}/usr/local/lib/cmake")
+	else()
+	endif()
+	
+	include("${_INCLUDE_PREFIX}/LibObs/LibObsConfig.cmake")
+	if (EXISTS "${_INCLUDE_PREFIX}/obs-frontend-api/obs-frontend-apiConfig.cmake")
+		include("${_INCLUDE_PREFIX}/obs-frontend-api/obs-frontend-apiConfig.cmake")
+		
+		if(WIN32)
+			download_project(
+				PROJ qt
+				URL https://cdn.xaymar.com/obs/qt_${OBS_QT_VERSION}.7z
+				UPDATE_DISCONNECTED 1
+			)
+
+			set(Qt5_DIR "${qt_SOURCE_DIR}" CACHE STRING "Path to Qt5")
+			if("${BITS}" STREQUAL "32")
+				CacheSet(Qt5_DIR "${qt_SOURCE_DIR}/msvc2017/lib/cmake/Qt5/")
+			else()
+				CacheSet(Qt5_DIR "${qt_SOURCE_DIR}/msvc2017_64/lib/cmake/Qt5/")
+			endif()
+		endif()
+		set(HAVE_OBS_FRONTEND TRUE)
+	endif()
+	
+	set(libobs_INCLUDE_DIRS "${libobs_SOURCE_DIR}/include")
 endif()
+
+# QT5
+if(HAVE_OBS_FRONTEND)
+	find_package(Qt5 COMPONENTS Core Widgets REQUIRED)
+endif()
+
+# CURL
+find_package(CURL QUIET)
+if(NOT CURL_FOUND)
+	if(${PropertyPrefix}OBS_NATIVE)
+		# Already defined by OBS
+		set(CURL_LIBRARIES "${CURL_LIB}")
+		set(CURL_INCLUDE_DIRS "${CURL_INCLUDE_DIR}")
+	elseif(${PropertyPrefix}OBS_REFERENCE)
+		set(CURL_LIBRARIES "${OBS_DEPENDENCIES_DIR}/bin/libcurl.lib")
+		set(CURL_INCLUDE_DIRS "${OBS_DEPENDENCIES_DIR}/include")
+	elseif(${PropertyPrefix}OBS_PACKAGE)
+		set(CURL_LIBRARIES "${OBS_DEPENDENCIES_DIR}/bin/libcurl.lib")
+		set(CURL_INCLUDE_DIRS "${OBS_DEPENDENCIES_DIR}/include")	
+	elseif(${PropertyPrefix}OBS_DOWNLOAD)
+		set(CURL_LIBRARIES "${obsdeps_SOURCE_DIR}/win${BITS}/bin/libcurl.lib")
+		set(CURL_INCLUDE_DIRS "${obsdeps_SOURCE_DIR}/win${BITS}/include")
+	endif()
+	CacheSet(CURL_LIBRARY_DEBUG ${CURL_LIBRARIES})
+	CacheSet(CURL_LIBRARY_RELEASE ${CURL_LIBRARIES})
+	CacheSet(CURL_INCLUDE_DIR ${CURL_INCLUDE_DIRS})
+	set(CURL_FOUND ON)
+endif()
+
+# ZLIB
+find_package(ZLIB QUIET)
+if(NOT ZLIB_FOUND)
+	if(${PropertyPrefix}OBS_NATIVE)
+		# Already defined by OBS
+		set(ZLIB_LIBRARIES "${ZLIB_LIB}")
+		set(ZLIB_INCLUDE_DIRS "${ZLIB_INCLUDE_DIR}")
+	elseif(${PropertyPrefix}OBS_REFERENCE)
+		set(ZLIB_LIBRARIES "${OBS_DEPENDENCIES_DIR}/bin/zlib.lib")
+		set(ZLIB_INCLUDE_DIRS "${OBS_DEPENDENCIES_DIR}/include")
+	elseif(${PropertyPrefix}OBS_PACKAGE)
+		set(ZLIB_LIBRARIES "${OBS_DEPENDENCIES_DIR}/bin/zlib.lib")
+		set(ZLIB_INCLUDE_DIRS "${OBS_DEPENDENCIES_DIR}/include")	
+	elseif(${PropertyPrefix}OBS_DOWNLOAD)
+		set(ZLIB_LIBRARIES "${obsdeps_SOURCE_DIR}/win${BITS}/bin/zlib.lib")
+		set(ZLIB_INCLUDE_DIRS "${obsdeps_SOURCE_DIR}/win${BITS}/include")
+	endif()
+	CacheSet(ZLIB_LIBRARY_DEBUG ${ZLIB_LIBRARIES})
+	CacheSet(ZLIB_LIBRARY_RELEASE ${ZLIB_LIBRARIES})
+	CacheSet(ZLIB_INCLUDE_DIR ${ZLIB_INCLUDE_DIRS})
+	set(ZLIB_FOUND ON)
+endif()
+
+# libzip
+set(LIBZIP_INCLUDE_DIRS "${PROJECT_SOURCE_DIR}/third-party/libzip/${BITS}/include")
+set(LIBZIP_LIBRARIES "${PROJECT_SOURCE_DIR}/third-party/libzip/${BITS}/lib/zip.lib")
+set(LIBZIP_BINARIES "${PROJECT_SOURCE_DIR}/third-party/libzip/${BITS}/bin/zip.dll")
 
 ################################################################################
 # Code
 ################################################################################
-set(PROJECT_DATA_LOCALE
+set(PROJECT_DATA
 	"${PROJECT_SOURCE_DIR}/data/locale/en-US.ini"
 )
-set(PROJECT_DATA_EFFECTS
-)
-set(PROJECT_DATA_SHADERS
-)
-set(PROJECT_DATA
-	${PROJECT_DATA_LOCALE}
-	${PROJECT_DATA_EFFECTS}
-	${PROJECT_DATA_SHADERS}
-)
-
-set(PROJECT_LIBRARIES
-)
-
 set(PROJECT_TEMPLATES
-	"${PROJECT_SOURCE_DIR}/cmake/version.hpp.in"
-	"${PROJECT_SOURCE_DIR}/cmake/module.cpp.in"
-	"${PROJECT_SOURCE_DIR}/cmake/DownloadProject.cmake"
-	"${PROJECT_SOURCE_DIR}/cmake/DownloadProject.CmakeLists.cmake.in"
-	"${PROJECT_SOURCE_DIR}/cmake/util.cmake"
-)
-if(WIN32)
-	list(APPEND PROJECT_TEMPLATES
-		"${PROJECT_SOURCE_DIR}/cmake/installer.iss.in"
-		"${PROJECT_SOURCE_DIR}/cmake/version.rc.in"
-	)
-endif()
-
-set(PROJECT_PUBLIC
+	"cmake/version.hpp.in"
+	"cmake/module.cpp.in"
 )
 set(PROJECT_PRIVATE_GENERATED
 	"${PROJECT_BINARY_DIR}/source/module.cpp"
 	"${PROJECT_BINARY_DIR}/source/version.hpp"
 )
 set(PROJECT_PRIVATE_SOURCE
-	"${PROJECT_SOURCE_DIR}/source/plugin.hpp"
-	"${PROJECT_SOURCE_DIR}/source/plugin.cpp"
-	"${PROJECT_SOURCE_DIR}/source/json-source.hpp"
-	"${PROJECT_SOURCE_DIR}/source/json-source.cpp"
-	"${PROJECT_SOURCE_DIR}/source/obs-source-factory.hpp"
-	"${PROJECT_SOURCE_DIR}/source/obs-source-factory.cpp"
+	"source/plugin.hpp"
+	"source/plugin.cpp"
+	"source/obs/obs-browser-panel.hpp"
+	"source/ui/ui.hpp"
+	"source/ui/ui.cpp"
+	"source/ui/ui-browser.hpp"
+	"source/ui/ui-browser.cpp"
+	"source/ui/ui-download.hpp"
+	"source/ui/ui-download.cpp"
+	"source/util/utility.hpp"
+	"source/util/utility.cpp"
+	"source/util/curl.hpp"
+	"source/util/curl.cpp"
+	"source/util/systeminfo.hpp"
+	"source/util/systeminfo.cpp"
+	"source/util/zip.hpp"
+	"source/util/zip.cpp"
 )
-
+set(PROJECT_UI
+	"ui/theme-download.ui"
+)
 set(PROJECT_PRIVATE
 	${PROJECT_DATA}
+	${PROJECT_TEMPLATES}
 	${PROJECT_PRIVATE_GENERATED}
 	${PROJECT_PRIVATE_SOURCE}
-	${PROJECT_TEMPLATES}
+	${PROJECT_UI}
 )
+
+set(PROJECT_LIBRARIES
+	${CURL_LIBRARIES}
+	${LIBZIP_LIBRARIES}
+)
+set(PROJECT_LIBRARIES_DELAYED )
+set(PROJECT_INCLUDE_DIRS
+	${CURL_INCLUDE_DIRS}
+	${LIBZIP_INCLUDE_DIRS}
+	${libobs_INCLUDE_DIRS}
+)
+set(PROJECT_DEFINES )
+
+if(WIN32)
+	list(APPEND PROJECT_LIBRARIES
+		 Advapi32
+	)
+	list(APPEND PROJECT_DEFINEDS
+		_CRT_SECURE_NO_WARNINGS
+		_ENABLE_EXTENDED_ALIGNED_STORAGE
+		# windows.h
+		WIN32_LEAN_AND_MEAN
+		NOGPICAPMASKS
+		NOVIRTUALKEYCODES
+		#NOWINMESSAGES
+		NOWINSTYLES
+		NOSYSMETRICS
+		NOMENUS
+		NOICONS
+		NOKEYSTATES
+		NOSYSCOMMANDS
+		NORASTEROPS
+		NOSHOWWINDOW
+		NOATOM
+		NOCLIPBOARD
+		NOCOLOR
+		#NOCTLMGR
+		NODRAWTEXT
+		#NOGDI
+		NOKERNEL
+		#NOUSER
+		#NONLS
+		NOMB
+		NOMEMMGR
+		NOMETAFILE
+		NOMINMAX
+		#NOMSG
+		NOOPENFILE
+		NOSCROLL
+		NOSERVICE
+		NOSOUND
+		#NOTEXTMETRIC
+		NOWH
+		NOWINOFFSETS
+		NOCOMM
+		NOKANJI
+		#NOHELP
+		NOPROFILER
+		NODEFERWINDOWPOS
+		NOMCX
+		NOIME
+		NOMDI
+		NOINOUT
+	)
+endif()
 
 source_group(TREE "${PROJECT_SOURCE_DIR}/data" PREFIX "Data Files" FILES ${PROJECT_DATA})
 source_group(TREE "${PROJECT_BINARY_DIR}/source" PREFIX "Generated Files" FILES ${PROJECT_PRIVATE_GENERATED})
@@ -336,14 +452,11 @@ add_library(${PROJECT_NAME} MODULE
 	${PROJECT_PRIVATE}
 )
 
-# Clang-Format
-if(HAVE_CLANG)
-	clang_format(
-		TARGETS ${PROJECT_NAME}
-		DEPENDENCY
-		VERSION 9.0.0
-	)
-endif()
+set_target_properties(${PROJECT_NAME}
+	PROPERTIES
+		PREFIX ""
+		IMPORT_PREFIX ""
+)
 
 # Include Directories
 target_include_directories(${PROJECT_NAME}
@@ -351,97 +464,38 @@ target_include_directories(${PROJECT_NAME}
 	PRIVATE
 		"${PROJECT_BINARY_DIR}/source"
 		"${PROJECT_SOURCE_DIR}/source"
+		${PROJECT_INCLUDE_DIRS}
 )
-
-# OBS Studio
-if(${PropertyPrefix}OBS_NATIVE)
-	target_link_libraries(${PROJECT_NAME}
-		libobs
-	)
-elseif(${PropertyPrefix}OBS_REFERENCE)
-	target_include_directories(${PROJECT_NAME}
-		PRIVATE
-			"${OBS_STUDIO_DIR}/libobs"
-	)
-	target_link_libraries(${PROJECT_NAME}
-		"${LIBOBS_LIB}"
-	)
-elseif(${PropertyPrefix}OBS_PACKAGE)
-	target_include_directories(${PROJECT_NAME}
-		PRIVATE
-			"${OBS_STUDIO_DIR}/include"
-	)
-	target_link_libraries(${PROJECT_NAME}
-		libobs
-	)
-elseif(${PropertyPrefix}OBS_DOWNLOAD)
-	target_link_libraries(${PROJECT_NAME}
-		libobs
-	)
-endif()
 
 # Link Libraries
 target_link_libraries(${PROJECT_NAME}
 	${PROJECT_LIBRARIES}
 )
+if(WIN32)
+	target_link_libraries(${PROJECT_NAME}
+		Delayimp.lib
+	)
+	foreach(DELAYLOAD ${PROJECT_LIBRARIES_DELAYED})
+		get_target_property(_lf ${PROJECT_NAME} LINK_FLAGS)
+		if (NOT _lf)
+			set(_lf "")
+		endif()
+		set_target_properties(${PROJECT_NAME} PROPERTIES LINK_FLAGS "${_lf} /DELAYLOAD:${DELAYLOAD}")
+	endforeach()
+endif()
 
 # Definitions
-if (WIN32)
-	target_compile_definitions(${PROJECT_NAME}
-		PRIVATE
-			_CRT_SECURE_NO_WARNINGS
-			_ENABLE_EXTENDED_ALIGNED_STORAGE
-			# windows.h
-			WIN32_LEAN_AND_MEAN
-			NOGPICAPMASKS
-			NOVIRTUALKEYCODES
-			#NOWINMESSAGES
-			NOWINSTYLES
-			NOSYSMETRICS
-			NOMENUS
-			NOICONS
-			NOKEYSTATES
-			NOSYSCOMMANDS
-			NORASTEROPS
-			NOSHOWWINDOW
-			NOATOM
-			NOCLIPBOARD
-			NOCOLOR
-			NOCTLMGR
-			NODRAWTEXT
-			#NOGDI
-			NOKERNEL
-			#NOUSER
-			#NONLS
-			NOMB
-			NOMEMMGR
-			NOMETAFILE
-			NOMINMAX
-			#NOMSG
-			NOOPENFILE
-			NOSCROLL
-			NOSERVICE
-			NOSOUND
-			#NOTEXTMETRIC
-			NOWH
-			NOWINOFFSETS
-			NOCOMM
-			NOKANJI
-			NOHELP
-			NOPROFILER
-			NODEFERWINDOWPOS
-			NOMCX
-			NOIME
-			NOMDI
-			NOINOUT
-	)
-endif()
+target_compile_definitions(${PROJECT_NAME}
+	PRIVATE
+		${PROJECT_DEFINITIONS}
+)
 
 # C++ Standard and Extensions
 set_target_properties(
 	${PROJECT_NAME}
 	PROPERTIES
 		CXX_STANDARD ${_CXX_STANDARD}
+		CXX_STANDARD_REQUIRED ON
 		CXX_EXTENSIONS ${_CXX_EXTENSIONS}
 )
 
@@ -462,43 +516,106 @@ else()
 	)
 endif()
 
+# UI
+if(HAVE_OBS_FRONTEND)
+	target_link_libraries(${PROJECT_NAME}
+		obs-frontend-api
+		Qt5::Core
+		Qt5::Widgets
+	)
+	set_target_properties(
+		${PROJECT_NAME}
+		PROPERTIES
+		AUTOUIC TRUE
+		AUTOUIC_SEARCH_PATHS "${PROJECT_SOURCE_DIR};${PROJECT_SOURCE_DIR}/ui"
+		AUTOMOC TRUE
+		AUTORCC TRUE
+		AUTOGEN_BUILD_DIR "${PROJECT_BINARY_DIR}/source"
+		AUTOGEN_SOURCE_GROUP "Qt Files"
+	)
+endif()
+
+# Clang Tools
+if(HAVE_CLANG)
+	clang_format(
+		TARGETS ${PROJECT_NAME}
+		DEPENDENCY
+		VERSION 9.0.0
+	)
+endif()
+
 ################################################################################
 # Installation
 ################################################################################
 
 if(${PropertyPrefix}OBS_NATIVE)
 	install_obs_plugin_with_data(${PROJECT_NAME} data)
+	install(FILES ${LIBZIP_BINARIES}
+		DESTINATION "./obs-plugins/${BITS}bit/")
+	add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
+		COMMAND "${CMAKE_COMMAND}" -E copy
+			"${LIBZIP_BINARIES}"
+			"${CMAKE_BINARY_DIR}/rundir/$<CONFIGURATION>/obs-plugins/${BITS}bit/"
+		VERBATIM)
 else()
-	install(
-		TARGETS ${PROJECT_NAME}
-		RUNTIME DESTINATION "./obs-plugins/${BITS}bit/" COMPONENT Runtime
-		LIBRARY DESTINATION "./obs-plugins/${BITS}bit/" COMPONENT Runtime
-	)
-	if(MSVC)
+	if(UNIX_LOCAL_STRUCTURE)
 		install(
-			FILES $<TARGET_PDB_FILE:${PROJECT_NAME}>
-			DESTINATION "./obs-plugins/${BITS}bit/"
-			OPTIONAL
+			TARGETS ${PROJECT_NAME}
+			RUNTIME DESTINATION "./plugins/${PROJECT_NAME}/bin/${BITS}bit/" COMPONENT Runtime
+			LIBRARY DESTINATION "./plugins/${PROJECT_NAME}/bin/${BITS}bit/" COMPONENT Runtime		
 		)
-	endif()
+
+		install(
+			DIRECTORY "data/"
+			DESTINATION "./plugins/${PROJECT_NAME}/data/"
+		)
+		
+		add_custom_target(
+			PACKAGE_7Z
+			${CMAKE_COMMAND} -E tar cfv "${_PACKAGE_FULL_NAME}.7z" --format=7zip --
+				"${CMAKE_INSTALL_PREFIX}/plugins/${PROJECT_NAME}"
+			WORKING_DIRECTORY "${CMAKE_INSTALL_PREFIX}"
+		)
+		add_custom_target(
+			PACKAGE_ZIP
+			${CMAKE_COMMAND} -E tar cfv "${_PACKAGE_FULL_NAME}.zip" --format=zip --
+				"${CMAKE_INSTALL_PREFIX}/plugins/${PROJECT_NAME}"
+			WORKING_DIRECTORY "${CMAKE_INSTALL_PREFIX}"
+		)
+	else()
+		install(
+			TARGETS ${PROJECT_NAME}
+			RUNTIME DESTINATION "./obs-plugins/${BITS}bit/" COMPONENT Runtime
+			LIBRARY DESTINATION "./obs-plugins/${BITS}bit/" COMPONENT Runtime
+		)
+		install(FILES ${LIBZIP_BINARIES}
+			DESTINATION "./obs-plugins/${BITS}bit/")
+		if(MSVC)
+			install(
+				FILES $<TARGET_PDB_FILE:${PROJECT_NAME}>
+				DESTINATION "./obs-plugins/${BITS}bit/"
+				OPTIONAL
+			)
+		endif()
 	
-	install(
-		DIRECTORY "${PROJECT_SOURCE_DIR}/data/"
-		DESTINATION "./data/obs-plugins/${PROJECT_NAME}/"
-	)
-	
-	add_custom_target(
-		PACKAGE_7Z
-		${CMAKE_COMMAND} -E tar cfv "${_PACKAGE_FULL_NAME}.7z" --format=7zip --
-			"${CMAKE_INSTALL_PREFIX}/obs-plugins"
-			"${CMAKE_INSTALL_PREFIX}/data"
-		WORKING_DIRECTORY "${CMAKE_INSTALL_PREFIX}"
-	)
-	add_custom_target(
-		PACKAGE_ZIP
-		${CMAKE_COMMAND} -E tar cfv "${_PACKAGE_FULL_NAME}.zip" --format=zip --
-			"${CMAKE_INSTALL_PREFIX}/obs-plugins"
-			"${CMAKE_INSTALL_PREFIX}/data"
-		WORKING_DIRECTORY "${CMAKE_INSTALL_PREFIX}"
-	)
+		install(
+			DIRECTORY "data/"
+			DESTINATION "./data/obs-plugins/${PROJECT_NAME}/"
+		)
+		
+		add_custom_target(
+			PACKAGE_7Z
+			${CMAKE_COMMAND} -E tar cfv "${_PACKAGE_FULL_NAME}.7z" --format=7zip --
+				"${CMAKE_INSTALL_PREFIX}/obs-plugins"
+				"${CMAKE_INSTALL_PREFIX}/data"
+			WORKING_DIRECTORY "${CMAKE_INSTALL_PREFIX}"
+		)
+		add_custom_target(
+			PACKAGE_ZIP
+			${CMAKE_COMMAND} -E tar cfv "${_PACKAGE_FULL_NAME}.zip" --format=zip --
+				"${CMAKE_INSTALL_PREFIX}/obs-plugins"
+				"${CMAKE_INSTALL_PREFIX}/data"
+			WORKING_DIRECTORY "${CMAKE_INSTALL_PREFIX}"
+		)
+	endif()	
 endif()

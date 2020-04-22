@@ -1,0 +1,15 @@
+prefix=D:/Projects/Own3d.TV/obs-studio/UI/frontend-plugins/obs-own3dtv/third-party/libzip/64
+exec_prefix=${prefix}
+bindir=${exec_prefix}/bin
+libdir=${exec_prefix}/lib
+includedir=${prefix}/include
+
+zipcmp=${exec_prefix}/bin/zipcmp
+
+Name: libzip
+Description: library for handling zip archives
+Version: 1.6.1
+Libs:  -L${libdir} -lzip
+Libs.private:  -lD:/Projects/Xaymar/obs-studio/cmbuild/25.0/win64/bin/zlib.lib -ladvapi32
+Cflags: -I${includedir}
+

@@ -82,5 +82,10 @@ for (let value of json.sources) {
 	// This is as close to a pointer as we can get.
 	make_relative_paths(value.settings);
 }
+for (let value of json.transitions) {
+	// Above gives us a REFERENCE to the object contained.
+	// This is as close to a pointer as we can get.
+	make_relative_paths(value.settings);
+}
 
 fs.writeFileSync(path.join(path_output, 'data.json'), JSON.stringify(json));
