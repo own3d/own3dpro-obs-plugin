@@ -63,6 +63,8 @@ namespace own3d {
 	std::string_view testing_archive_path();
 
 	std::string_view get_unique_identifier();
+
+	void reset_unique_identifier();
 } // namespace own3d
 
 #define D_TRANSLATE(x) obs_module_text(x)

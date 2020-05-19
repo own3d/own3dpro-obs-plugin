@@ -30,7 +30,8 @@ void own3d::ui::ui::load()
 void own3d::ui::ui::initialize_obs()
 {
 	// Attach to OBS's Tools menu.
-	_action = reinterpret_cast<QAction*>(obs_frontend_add_tools_menu_qaction(D_TRANSLATE(I18N_THEMEBROWSER_MENU.data())));
+	_action =
+		reinterpret_cast<QAction*>(obs_frontend_add_tools_menu_qaction(D_TRANSLATE(I18N_THEMEBROWSER_MENU.data())));
 	connect(_action, &QAction::triggered, this, &own3d::ui::ui::own3d_action_triggered);
 }
 

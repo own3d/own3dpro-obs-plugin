@@ -6,6 +6,8 @@
 #include "util/curl.hpp"
 #include "util/systeminfo.hpp"
 
+constexpr std::string_view CFG_UNIQUE_ID = "UniqueId";
+
 MODULE_EXPORT bool obs_module_load(void)
 try {
 	// Initialize Configuration
@@ -250,7 +252,6 @@ static std::string request_unique_identifier()
 	}
 
 	if (id.size() > 0) {
-		DLOG_INFO("Acquired unique machine token.");
 		return id;
 	} else {
 		DLOG_ERROR("API returned an empty machine id. Functionality disabled.");
@@ -262,18 +263,26 @@ static std::string request_unique_identifier()
 
 std::string_view own3d::get_unique_identifier()
 {
-	constexpr std::string_view CFG_UNIQUE_ID = "UniqueId";
-
 	auto             cfg = own3d::configuration::instance()->get();
 	std::string_view id  = obs_data_get_string(cfg.get(), CFG_UNIQUE_ID.data());
 
 	if (id.length() == 0) { // Id is invalid, request a new one.
 		std::string idv = request_unique_identifier();
-		obs_data_set_string(cfg.get(), CFG_UNIQUE_ID.data(), idv.c_str());
-		id = obs_data_get_string(cfg.get(), CFG_UNIQUE_ID.data());
-		own3d::configuration::instance()->save();
-		DLOG_INFO("Acquired unique machine token.");
+		if (idv.length() > 0) {
+			obs_data_set_string(cfg.get(), CFG_UNIQUE_ID.data(), idv.c_str());
+			id = obs_data_get_string(cfg.get(), CFG_UNIQUE_ID.data());
+			own3d::configuration::instance()->save();
+			DLOG_INFO("Acquired unique machine token.");
+		} else {
+			DLOG_ERROR("Failed to acquire machine token.");
+		}
 	}
 
 	return id;
+}
+
+void own3d::reset_unique_identifier()
+{
+	obs_data_unset_user_value(own3d::configuration::instance()->get().get(), CFG_UNIQUE_ID.data());
+	own3d::configuration::instance()->save();
 }

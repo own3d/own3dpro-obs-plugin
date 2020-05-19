@@ -19,7 +19,7 @@
 cmake_minimum_required(VERSION 3.12.0)
 
 # Automatic Versioning
-set(VERSION_MAJOR 0)
+set(VERSION_MAJOR 1)
 set(VERSION_MINOR 1)
 set(VERSION_PATCH 0)
 set(VERSION_TWEAK 0)

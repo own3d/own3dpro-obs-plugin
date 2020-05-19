@@ -332,6 +332,7 @@ static void parse_transition(std::shared_ptr<obs_data_t> item, std::string path)
 
 	// Create the transition.
 	obs_source_t* source = obs_source_create(id, name, settings.get(), nullptr);
+	
 	//obs_frontend_set_current_transition(source);
 }
 
@@ -460,7 +461,10 @@ own3d::ui::installer::installer(const QUrl& url, const QString& name, const QStr
 		_theme_archive_path = std::filesystem::temp_directory_path();
 		_theme_archive_path.append("own3d");
 		std::filesystem::create_directories(_theme_archive_path);
-		_theme_archive_path.append(hash.toStdString()).concat(".pack");
+		_theme_archive_path.append(name.toStdString());
+		if (hash.length() > 0)
+			_theme_archive_path.concat(hash.toStdString().substr(0, 16));
+		_theme_archive_path.concat(".pack");
 	} else {
 		_theme_archive_path = own3d::testing_archive_path();
 		_theme_name         = QString::fromUtf8(own3d::testing_archive_name().data());

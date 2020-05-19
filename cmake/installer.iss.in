@@ -24,11 +24,16 @@ AllowNoIcons=yes
 LicenseFile="@ISS_SOURCE_DIR@/LICENSE"
 OutputDir="@ISS_PACKAGE_DIR@"
 OutputBaseFilename=@CMAKE_PACKAGE_NAME@-@_PACKAGE_SUFFIX_OVERRIDE@
-Compression=lzma
-SolidCompression=yes
 VersionInfoVersion={#MyAppVersion}
 VersionInfoCompany={#MyAppPublisher}
 VersionInfoDescription={#MyAppName} Setup
+; Compression
+Compression=lzma2/ultra64
+SolidCompression=yes
+LZMAAlgorithm=1
+; Wizard Information
+WizardStyle=modern
+WizardResizable=yes
 
 [Languages]
 Name: "english"; MessagesFile: "compiler:Default.isl"

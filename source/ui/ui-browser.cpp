@@ -83,29 +83,31 @@ void own3d::ui::browser::url_changed(const QString& p_url)
 	if (!url.isValid())
 		return;
 
-	// Check if this is just canceling the download.
-	QUrlQuery urlq{url.query()};
-	if (urlq.hasQueryItem("cancel")) {
-		emit cancelled();
-		return;
-	}
+	QString     path  = url.path();
+	std::string debug = path.toStdString();
+	if (path.compare(QString{"/api/obs/token-invalid"}, Qt::CaseInsensitive) == 0) {
+		own3d::reset_unique_identifier();
+		show();
+	} else if (path.compare(QString{"/api/obs/download"}, Qt::CaseInsensitive) == 0) {
+		// Check if this is just canceling the download.
+		QUrlQuery urlq{url.query()};
+		if (urlq.hasQueryItem("cancel")) {
+			emit cancelled();
+			return;
+		}
 
-	if (urlq.hasQueryItem("theme-url")) {
-		QString download_hex = urlq.queryItemValue("theme-url");
-		QString download     = util::hex_to_string(download_hex);
-
-		QString name = urlq.queryItemValue("theme-name");
-
-		//QString hash_hex     = urlq.queryItemValue("theme-hash");
-		//QString hash         = util::hex_to_string(hash_hex);
-		QString hash = "";
+		if (urlq.hasQueryItem("theme-url")) {
+			QString download = util::hex_to_string(urlq.queryItemValue("theme-url"));
+			QString name     = urlq.queryItemValue("theme-name");
+			QString hash     = "";
 
 #ifdef _DEBUG
-		DLOG_DEBUG("Starting downloading theme '%s' from '%s' with hash '%s'.", name.toStdString().c_str(),
-				   download.toStdString().c_str(), hash.toStdString().c_str());
+			DLOG_DEBUG("Starting downloading theme '%s' from '%s' with hash '%s'.", name.toStdString().c_str(),
+					   download.toStdString().c_str(), hash.toStdString().c_str());
 #endif
 
-		emit selected(QUrl(download), name, hash);
+			emit selected(QUrl(download), name, hash);
+		}
 	}
 }
 
