@@ -11,6 +11,9 @@ constexpr std::string_view I18N_STATE_DOWNLOAD = "ThemeInstaller.State.Download"
 constexpr std::string_view I18N_STATE_EXTRACT  = "ThemeInstaller.State.Extract";
 constexpr std::string_view I18N_STATE_INSTALL  = "ThemeInstaller.State.Install";
 
+constexpr std::string_view TOKEN_PATH = "<REPLACE|ME>";
+constexpr std::string_view TOKEN_UUID = "<machine-token>";
+
 void source_deleter(obs_source_t* v)
 {
 	obs_source_release(v);
@@ -146,27 +149,39 @@ static void assign_generic_source_info(obs_source_t* _child, std::shared_ptr<obs
 	obs_source_set_flags(_child, obs_data_get_int(data.get(), "flags"));
 }
 
-static void convert_relative_to_absolute_paths(obs_data_t* data, std::string base_dir)
+static void replace_tokens(obs_data_t* data, std::string base_directory_path)
 {
-	static std::string_view NEEDLE{"<REPLACE|ME>"};
+	std::string_view machine_token = own3d::get_unique_identifier();
 	for (obs_data_item_t* item = obs_data_first(data); item != nullptr; obs_data_item_next(&item)) {
+
 		switch (obs_data_item_gettype(item)) {
 		case obs_data_type::OBS_DATA_STRING: {
-			const char* cstr = obs_data_item_get_string(item);
-			if (cstr == nullptr)
+			std::string string;
+
+			if (const char* cstr = obs_data_item_get_string(item); cstr == nullptr) {
 				break;
-			std::string string = cstr;
-			std::string prefix = string.substr(0, NEEDLE.length());
-			if (prefix == NEEDLE) {
-				string = base_dir + string.substr(NEEDLE.length());
+			} else {
+				string = cstr;
 			}
+
+			while (std::string::size_type pos = string.find(TOKEN_PATH)) {
+				if (pos == std::string::npos)
+					break;
+				string = string.replace(pos, TOKEN_PATH.length(), base_directory_path);
+			}
+			while (std::string::size_type pos = string.find(TOKEN_UUID)) {
+				if (pos == std::string::npos)
+					break;
+				string = string.replace(pos, TOKEN_UUID.length(), machine_token);
+			}
+
+
 			obs_data_item_set_string(&item, string.c_str());
 			break;
 		}
 		case obs_data_type::OBS_DATA_OBJECT: {
 			obs_data_t* chld = obs_data_item_get_obj(item);
-			convert_relative_to_absolute_paths(chld, base_dir);
-			//obs_data_release(chld);
+			replace_tokens(chld, base_directory_path);
 		}
 		}
 	}
@@ -223,7 +238,7 @@ static void parse_source(std::shared_ptr<obs_data_t> item, std::string path)
 										 [](obs_data_t* v) { obs_data_release(v); }};
 
 	// Need to convert all relative paths to proper paths.
-	convert_relative_to_absolute_paths(settings.get(), path);
+	replace_tokens(settings.get(), path);
 
 	// Create the source
 	obs_source_t* source = obs_source_create(id, name, settings.get(), nullptr);
@@ -251,7 +266,7 @@ static void parse_scene(std::shared_ptr<obs_data_t> item, std::string path)
 										 [](obs_data_t* v) { obs_data_release(v); }};
 
 	// Need to convert all relative paths to proper paths.
-	convert_relative_to_absolute_paths(settings.get(), path);
+	replace_tokens(settings.get(), path);
 
 	// Create the source
 	obs_scene_t*  scene  = obs_scene_create(name);
@@ -328,11 +343,11 @@ static void parse_transition(std::shared_ptr<obs_data_t> item, std::string path)
 										 [](obs_data_t* v) { obs_data_release(v); }};
 
 	// Need to convert all relative paths to proper paths.
-	convert_relative_to_absolute_paths(settings.get(), path);
+	replace_tokens(settings.get(), path);
 
 	// Create the transition.
 	obs_source_t* source = obs_source_create(id, name, settings.get(), nullptr);
-	
+
 	//obs_frontend_set_current_transition(source);
 }
 
@@ -454,7 +469,6 @@ own3d::ui::installer::installer(const QUrl& url, const QString& name, const QStr
 	: QDialog(reinterpret_cast<QWidget*>(obs_frontend_get_main_window())), Ui::ThemeDownload(), _download_url(url),
 	  _theme_name(name), _download_hash(hash)
 {
-
 	// Check if we are in test mode or now.
 	if (!own3d::testing_enabled()) {
 		// Generate a download filename.
