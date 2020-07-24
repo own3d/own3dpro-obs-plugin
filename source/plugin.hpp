@@ -25,6 +25,7 @@
 #define OWN3D_USER_AGENT "Own3d.tv OBS Plugin/" OWN3DTV_VERSION_STRING " (Unix)"
 #endif
 
+
 namespace own3d {
 	inline void obs_data_deleter(obs_data_t* v)
 	{
@@ -55,6 +56,8 @@ namespace own3d {
 
 		static std::shared_ptr<own3d::configuration> instance();
 	};
+
+	std::string get_api_endpoint(std::string_view const args = "");
 
 	bool testing_enabled();
 

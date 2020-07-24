@@ -11,9 +11,6 @@ constexpr std::string_view I18N_STATE_DOWNLOAD = "ThemeInstaller.State.Download"
 constexpr std::string_view I18N_STATE_EXTRACT  = "ThemeInstaller.State.Extract";
 constexpr std::string_view I18N_STATE_INSTALL  = "ThemeInstaller.State.Install";
 
-constexpr std::string_view TOKEN_PATH = "<REPLACE|ME>";
-constexpr std::string_view TOKEN_UUID = "<machine-token>";
-
 void source_deleter(obs_source_t* v)
 {
 	obs_source_release(v);
@@ -151,6 +148,9 @@ static void assign_generic_source_info(obs_source_t* _child, std::shared_ptr<obs
 
 static void replace_tokens(obs_data_t* data, std::string base_directory_path)
 {
+	constexpr std::string_view TOKEN_PATH    = "<REPLACE|ME>";
+	constexpr std::string_view TOKEN_UUID    = "<machine-token>";
+
 	std::string_view machine_token = own3d::get_unique_identifier();
 	for (obs_data_item_t* item = obs_data_first(data); item != nullptr; obs_data_item_next(&item)) {
 
@@ -174,7 +174,6 @@ static void replace_tokens(obs_data_t* data, std::string base_directory_path)
 					break;
 				string = string.replace(pos, TOKEN_UUID.length(), machine_token);
 			}
-
 
 			obs_data_item_set_string(&item, string.c_str());
 			break;

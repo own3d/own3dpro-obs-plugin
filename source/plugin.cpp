@@ -133,6 +133,27 @@ size_t uuid_write_cb(void* buffer, size_t size, size_t count, std::string* uuid,
 	return size * count;
 }
 
+std::string own3d::get_api_endpoint(std::string_view const args)
+{
+	// To protect against prying eyes which we don't want to find this, this is a
+	// SHA-256 hash of the word "testing". This will not prevent in-depth reverse
+	// engineering.
+	constexpr std::string_view KEY                  = "sandbox";
+	constexpr std::string_view URL_ENDPOINT         = "https://obs.own3d.tv/api/v1/";
+	constexpr std::string_view URL_ENDPOINT_SANDBOX = "https://sandbox.obs.own3d.tv/api/v1/";
+
+	std::vector<char> buffer;
+	buffer.reserve(65535);
+
+	auto cfg = own3d::configuration::instance()->get();
+	if (obs_data_get_bool(cfg.get(), KEY.data())) {
+		buffer.resize(snprintf(buffer.data(), buffer.size(), "%s%s", URL_ENDPOINT_SANDBOX.data(), args.data()));
+	} else {
+		buffer.resize(snprintf(buffer.data(), buffer.size(), "%s%s", URL_ENDPOINT.data(), args.data()));
+	}
+	return std::string(buffer.data(), buffer.data() + buffer.size());
+}
+
 bool own3d::testing_enabled()
 {
 	// To protect against prying eyes which we don't want to find this, this is a
@@ -225,11 +246,10 @@ static std::string request_unique_identifier()
 		own3d::util::curl rq;
 		std::string       args = j_.dump();
 		rq.set_option(CURLOPT_USERAGENT, OWN3D_USER_AGENT);
-		rq.set_option(CURLOPT_URL, "https://obs.own3d.tv/api/machine-tokens/issue");
-		rq.set_header("Content-Type", "application/json");
+		rq.set_option(CURLOPT_URL, own3d::get_api_endpoint("/machine-tokens/issue"));
 		rq.set_option(CURLOPT_POSTFIELDS, args.c_str());
-		DLOG_DEBUG("%s", args.c_str());
 		rq.set_option(CURLOPT_POST, true);
+		rq.set_header("Content-Type", "application/json");
 
 		rq.set_write_callback(
 			std::bind(uuid_write_cb, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3, &id, &rq));
