@@ -152,7 +152,7 @@ std::string own3d::get_api_endpoint(std::string_view const args)
 
 	std::vector<char> buffer(65535);
 
-	auto   cfg = own3d::configuration::instance()->get();
+	auto cfg = own3d::configuration::instance()->get();
 	if (obs_data_get_bool(cfg.get(), KEY.data())) {
 		buffer.resize(snprintf(buffer.data(), buffer.capacity(), "%s%s", URL_ENDPOINT_SANDBOX.data(), args.data()));
 	} else {

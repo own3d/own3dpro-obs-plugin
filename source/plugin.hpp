@@ -9,7 +9,6 @@
 #include <util/platform.h>
 #undef strtoll
 
-
 #ifdef WIN32
 #define OWN3D_USER_AGENT "Own3d.tv OBS Plugin/" OWN3DTV_VERSION_STRING " (Windows)"
 #elif APPLE
