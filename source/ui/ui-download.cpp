@@ -11,31 +11,6 @@ constexpr std::string_view I18N_STATE_DOWNLOAD = "ThemeInstaller.State.Download"
 constexpr std::string_view I18N_STATE_EXTRACT  = "ThemeInstaller.State.Extract";
 constexpr std::string_view I18N_STATE_INSTALL  = "ThemeInstaller.State.Install";
 
-void source_deleter(obs_source_t* v)
-{
-	obs_source_release(v);
-}
-
-void sceneitem_deleter(obs_sceneitem_t* v)
-{
-	obs_sceneitem_remove(v);
-}
-
-void data_deleter(obs_data_t* v)
-{
-	obs_data_release(v);
-}
-
-void data_item_deleter(obs_data_item_t* v)
-{
-	obs_data_item_release(&v);
-}
-
-void data_array_deleter(obs_data_array_t* v)
-{
-	obs_data_array_release(v);
-}
-
 own3d::ui::installer_thread::~installer_thread() {}
 
 own3d::ui::installer_thread::installer_thread(std::string url, std::string name, std::filesystem::path path,
@@ -148,12 +123,11 @@ static void assign_generic_source_info(obs_source_t* _child, std::shared_ptr<obs
 
 static void replace_tokens(obs_data_t* data, std::string base_directory_path)
 {
-	constexpr std::string_view TOKEN_PATH    = "<REPLACE|ME>";
-	constexpr std::string_view TOKEN_UUID    = "<machine-token>";
+	constexpr std::string_view TOKEN_PATH = "<REPLACE|ME>";
+	constexpr std::string_view TOKEN_UUID = "<machine-token>";
 
 	std::string_view machine_token = own3d::get_unique_identifier();
 	for (obs_data_item_t* item = obs_data_first(data); item != nullptr; obs_data_item_next(&item)) {
-
 		switch (obs_data_item_gettype(item)) {
 		case obs_data_type::OBS_DATA_STRING: {
 			std::string string;
@@ -191,7 +165,7 @@ static void parse_filters_for_source(obs_source_t* source, std::shared_ptr<obs_d
 	for (size_t idx = 0, edx = obs_data_array_count(filters.get()); idx < edx; idx++) {
 		// Filters are basically a list of sources that belong to a certain source and are unique to that source.
 		// Their data is identical to any other source.
-		std::shared_ptr<obs_data_t> item{obs_data_array_item(filters.get(), idx), data_deleter};
+		std::shared_ptr<obs_data_t> item{obs_data_array_item(filters.get(), idx), own3d::data_deleter};
 
 		// Skip any source that has no name or an invalid name.
 		const char* name = obs_data_get_string(item.get(), "name");
@@ -200,10 +174,10 @@ static void parse_filters_for_source(obs_source_t* source, std::shared_ptr<obs_d
 
 		// If it has a name, let's try to create it.
 		std::string                 id = obs_data_get_string(item.get(), "id");
-		std::shared_ptr<obs_data_t> settings{obs_data_get_obj(item.get(), "settings"), data_deleter};
+		std::shared_ptr<obs_data_t> settings{obs_data_get_obj(item.get(), "settings"), own3d::data_deleter};
 
 		std::shared_ptr<obs_source_t> filter{obs_source_create_private(id.c_str(), name, settings.get()),
-											 source_deleter};
+											 own3d::source_deleter};
 		if (!filter) {
 			// If creation of the source failed, skip the source.
 			continue;
@@ -234,7 +208,7 @@ static void parse_source(std::shared_ptr<obs_data_t> item, std::string path)
 	}
 
 	std::shared_ptr<obs_data_t> settings{obs_data_get_obj(item.get(), "settings"),
-										 [](obs_data_t* v) { obs_data_release(v); }};
+										 [](obs_data_t* v) { own3d::data_deleter(v); }};
 
 	// Need to convert all relative paths to proper paths.
 	replace_tokens(settings.get(), path);
@@ -244,8 +218,8 @@ static void parse_source(std::shared_ptr<obs_data_t> item, std::string path)
 	assign_generic_source_info(source, item);
 
 	// But wait, there's more! Filters.
-	parse_filters_for_source(
-		source, std::shared_ptr<obs_data_array_t>{obs_data_get_array(item.get(), "filters"), data_array_deleter});
+	parse_filters_for_source(source, std::shared_ptr<obs_data_array_t>{obs_data_get_array(item.get(), "filters"),
+																	   own3d::data_array_deleter});
 }
 
 static void parse_scene(std::shared_ptr<obs_data_t> item, std::string path)
@@ -262,7 +236,7 @@ static void parse_scene(std::shared_ptr<obs_data_t> item, std::string path)
 	}
 
 	std::shared_ptr<obs_data_t> settings{obs_data_get_obj(item.get(), "settings"),
-										 [](obs_data_t* v) { obs_data_release(v); }};
+										 [](obs_data_t* v) { own3d::data_deleter(v); }};
 
 	// Need to convert all relative paths to proper paths.
 	replace_tokens(settings.get(), path);
@@ -273,18 +247,18 @@ static void parse_scene(std::shared_ptr<obs_data_t> item, std::string path)
 	assign_generic_source_info(source, item);
 
 	// But wait, there's more! Filters.
-	parse_filters_for_source(
-		source, std::shared_ptr<obs_data_array_t>{obs_data_get_array(item.get(), "filters"), data_array_deleter});
+	parse_filters_for_source(source, std::shared_ptr<obs_data_array_t>{obs_data_get_array(item.get(), "filters"),
+																	   own3d::data_array_deleter});
 
 	// And now we add the actual items.
-	std::shared_ptr<obs_data_array_t> items{obs_data_get_array(settings.get(), "items"), data_array_deleter};
+	std::shared_ptr<obs_data_array_t> items{obs_data_get_array(settings.get(), "items"), own3d::data_array_deleter};
 	for (size_t idx = 0, edx = obs_data_array_count(items.get()); idx < edx; idx++) {
 		vec2               pos;
 		vec2               scale;
 		vec2               bounds;
 		obs_sceneitem_crop crop;
 
-		std::shared_ptr<obs_data_t> obj{obs_data_array_item(items.get(), idx), data_deleter};
+		std::shared_ptr<obs_data_t> obj{obs_data_array_item(items.get(), idx), own3d::data_deleter};
 		if (!obj) {
 			continue;
 		}
@@ -345,7 +319,7 @@ static void parse_transition(std::shared_ptr<obs_data_t> item, std::string path)
 	replace_tokens(settings.get(), path);
 
 	// Create the transition.
-	obs_source_t* source = obs_source_create(id, name, settings.get(), nullptr);
+	//obs_source_t* source = obs_source_create(id, name, settings.get(), nullptr);
 
 	//obs_frontend_set_current_transition(source);
 }
@@ -364,7 +338,7 @@ void own3d::ui::installer_thread::run_install()
 		}
 
 		std::string data_path_str = data_path.string();
-		data = std::shared_ptr<obs_data_t>(obs_data_create_from_json_file(data_path_str.c_str()), obs_data_deleter);
+		data = std::shared_ptr<obs_data_t>(obs_data_create_from_json_file(data_path_str.c_str()), own3d::data_deleter);
 	}
 
 	// Find a valid scene collection name.

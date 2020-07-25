@@ -2,6 +2,8 @@
 #include <stdexcept>
 #include <thread>
 #include "json/json.hpp"
+#include "source-alerts.hpp"
+#include "source-labels.hpp"
 #include "ui/ui.hpp"
 #include "util/curl.hpp"
 #include "util/systeminfo.hpp"
@@ -18,6 +20,12 @@ try {
 
 	// Initialize UI
 	own3d::ui::ui::initialize();
+
+	// Sources
+	{
+		static auto labels = std::make_shared<own3d::source::label_factory>();
+		static auto alerts = std::make_shared<own3d::source::alert_factory>();
+	}
 
 	return true;
 } catch (const std::exception& ex) {
@@ -65,14 +73,14 @@ own3d::configuration::configuration()
 
 	if ((!std::filesystem::is_directory(_data_path.parent_path()))
 		&& (!std::filesystem::create_directories(_data_path.parent_path()))) {
-		_data = std::shared_ptr<obs_data_t>(obs_data_create(), ::own3d::obs_data_deleter);
+		_data = std::shared_ptr<obs_data_t>(obs_data_create(), ::own3d::data_deleter);
 	} else {
 		if (std::filesystem::exists(_data_path)) {
 			_data = std::shared_ptr<obs_data_t>(
 				obs_data_create_from_json_file_safe(_data_path.string().c_str(), _data_path_bk.string().c_str()),
-				::own3d::obs_data_deleter);
+				::own3d::data_deleter);
 		} else {
-			_data = std::shared_ptr<obs_data_t>(obs_data_create(), ::own3d::obs_data_deleter);
+			_data = std::shared_ptr<obs_data_t>(obs_data_create(), ::own3d::data_deleter);
 		}
 	}
 }
@@ -80,7 +88,7 @@ own3d::configuration::configuration()
 std::shared_ptr<obs_data_t> own3d::configuration::get()
 {
 	obs_data_addref(_data.get());
-	return std::shared_ptr<obs_data_t>(_data.get(), ::own3d::obs_data_deleter);
+	return std::shared_ptr<obs_data_t>(_data.get(), ::own3d::data_deleter);
 }
 
 void own3d::configuration::save()
@@ -142,14 +150,13 @@ std::string own3d::get_api_endpoint(std::string_view const args)
 	constexpr std::string_view URL_ENDPOINT         = "https://obs.own3d.tv/api/v1/";
 	constexpr std::string_view URL_ENDPOINT_SANDBOX = "https://sandbox.obs.own3d.tv/api/v1/";
 
-	std::vector<char> buffer;
-	buffer.reserve(65535);
+	std::vector<char> buffer(65535);
 
-	auto cfg = own3d::configuration::instance()->get();
+	auto   cfg = own3d::configuration::instance()->get();
 	if (obs_data_get_bool(cfg.get(), KEY.data())) {
-		buffer.resize(snprintf(buffer.data(), buffer.size(), "%s%s", URL_ENDPOINT_SANDBOX.data(), args.data()));
+		buffer.resize(snprintf(buffer.data(), buffer.capacity(), "%s%s", URL_ENDPOINT_SANDBOX.data(), args.data()));
 	} else {
-		buffer.resize(snprintf(buffer.data(), buffer.size(), "%s%s", URL_ENDPOINT.data(), args.data()));
+		buffer.resize(snprintf(buffer.data(), buffer.capacity(), "%s%s", URL_ENDPOINT.data(), args.data()));
 	}
 	return std::string(buffer.data(), buffer.data() + buffer.size());
 }
@@ -246,7 +253,7 @@ static std::string request_unique_identifier()
 		own3d::util::curl rq;
 		std::string       args = j_.dump();
 		rq.set_option(CURLOPT_USERAGENT, OWN3D_USER_AGENT);
-		rq.set_option(CURLOPT_URL, own3d::get_api_endpoint("/machine-tokens/issue"));
+		rq.set_option(CURLOPT_URL, own3d::get_api_endpoint("machine-tokens/issue"));
 		rq.set_option(CURLOPT_POSTFIELDS, args.c_str());
 		rq.set_option(CURLOPT_POST, true);
 		rq.set_header("Content-Type", "application/json");
@@ -271,14 +278,14 @@ static std::string request_unique_identifier()
 #endif
 	}
 
-	if (id.size() > 0) {
-		return id;
-	} else {
+	if (id.size() == 0) {
 		DLOG_ERROR("API returned an empty machine id. Functionality disabled.");
 #ifndef _DEBUG
 		throw std::runtime_error("Failed to acquire unique machine id.");
 #endif
 	}
+
+	return id;
 }
 
 std::string_view own3d::get_unique_identifier()

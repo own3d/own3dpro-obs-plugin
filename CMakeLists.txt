@@ -346,7 +346,12 @@ set(PROJECT_PRIVATE_GENERATED
 set(PROJECT_PRIVATE_SOURCE
 	"source/plugin.hpp"
 	"source/plugin.cpp"
+	"source/source-alerts.hpp"
+	"source/source-alerts.cpp"
+	"source/source-labels.hpp"
+	"source/source-labels.cpp"
 	"source/obs/obs-browser-panel.hpp"
+	"source/obs/obs-source-factory.hpp"
 	"source/ui/ui.hpp"
 	"source/ui/ui.cpp"
 	"source/ui/ui-browser.hpp"
