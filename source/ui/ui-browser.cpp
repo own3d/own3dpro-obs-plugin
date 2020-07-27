@@ -85,10 +85,10 @@ void own3d::ui::browser::url_changed(const QString& p_url)
 
 	QString     path  = url.path();
 	std::string debug = path.toStdString();
-	if (path.contains(QString{"/obs/token-invalid"}, Qt::CaseInsensitive) == 0) {
+	if (path.contains(QString{"/obs/token-invalid"}, Qt::CaseInsensitive)) {
 		own3d::reset_unique_identifier();
 		show();
-	} else if (path.contains(QString{"/obs/download"}, Qt::CaseInsensitive) == 0) {
+	} else if (path.contains(QString{"/obs/download"}, Qt::CaseInsensitive)) {
 		// Check if this is just canceling the download.
 		QUrlQuery urlq{url.query()};
 		if (urlq.hasQueryItem("cancel")) {
