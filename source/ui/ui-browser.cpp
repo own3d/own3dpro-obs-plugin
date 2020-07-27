@@ -62,9 +62,7 @@ void own3d::ui::browser::closeEvent(QCloseEvent*)
 QUrl own3d::ui::browser::generate_url()
 {
 	QUrl url;
-	url.setScheme("https");
-	url.setHost("obs.own3d.tv");
-	url.setPath("/obs");
+	url.setUrl(QString::fromStdString(own3d::get_web_endpoint("obs")));
 	QUrlQuery urlq;
 	urlq.addQueryItem("machine_token", QString::fromUtf8(own3d::get_unique_identifier().data()));
 	urlq.addQueryItem("version", OWN3DTV_VERSION_STRING);

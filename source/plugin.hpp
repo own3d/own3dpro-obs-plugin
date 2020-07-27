@@ -91,7 +91,11 @@ namespace own3d {
 		static std::shared_ptr<own3d::configuration> instance();
 	};
 
+	bool is_sandbox();
+
 	std::string get_api_endpoint(std::string_view const args = "");
+
+	std::string get_web_endpoint(std::string_view const args = "");
 
 	bool testing_enabled();
 

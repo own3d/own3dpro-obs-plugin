@@ -140,19 +140,35 @@ size_t uuid_write_cb(void* buffer, size_t size, size_t count, std::string* uuid,
 	return size * count;
 }
 
+bool own3d::is_sandbox()
+{
+	constexpr std::string_view KEY = "sandbox";
+	auto                       cfg = own3d::configuration::instance()->get();
+	return obs_data_get_bool(cfg.get(), KEY.data());
+}
+
 std::string own3d::get_api_endpoint(std::string_view const args)
 {
-	// To protect against prying eyes which we don't want to find this, this is a
-	// SHA-256 hash of the word "testing". This will not prevent in-depth reverse
-	// engineering.
-	constexpr std::string_view KEY                  = "sandbox";
-	constexpr std::string_view URL_ENDPOINT         = "https://obs.own3d.tv/api/v1/";
-	constexpr std::string_view URL_ENDPOINT_SANDBOX = "https://sandbox.obs.own3d.tv/api/v1/";
+	constexpr std::string_view URL_ENDPOINT         = "api/v1/";
+	constexpr std::string_view URL_ENDPOINT_SANDBOX = "api/v1/";
 
 	std::vector<char> buffer(65535);
+	if (is_sandbox()) {
+		buffer.resize(snprintf(buffer.data(), buffer.capacity(), "%s%s", URL_ENDPOINT_SANDBOX.data(), args.data()));
+	} else {
+		buffer.resize(snprintf(buffer.data(), buffer.capacity(), "%s%s", URL_ENDPOINT.data(), args.data()));
+	}
+	std::string text = std::string(buffer.data(), buffer.data() + buffer.size());
+	return get_web_endpoint(text);
+}
 
-	auto cfg = own3d::configuration::instance()->get();
-	if (obs_data_get_bool(cfg.get(), KEY.data())) {
+std::string own3d::get_web_endpoint(std::string_view const args /*= ""*/)
+{
+	constexpr std::string_view URL_ENDPOINT         = "https://obs.own3d.tv/";
+	constexpr std::string_view URL_ENDPOINT_SANDBOX = "https://sandbox.obs.own3d.tv/";
+
+	std::vector<char> buffer(65535);
+	if (is_sandbox()) {
 		buffer.resize(snprintf(buffer.data(), buffer.capacity(), "%s%s", URL_ENDPOINT_SANDBOX.data(), args.data()));
 	} else {
 		buffer.resize(snprintf(buffer.data(), buffer.capacity(), "%s%s", URL_ENDPOINT.data(), args.data()));
