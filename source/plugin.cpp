@@ -76,9 +76,8 @@ own3d::configuration::configuration()
 		_data = std::shared_ptr<obs_data_t>(obs_data_create(), ::own3d::data_deleter);
 	} else {
 		if (std::filesystem::exists(_data_path)) {
-			_data = std::shared_ptr<obs_data_t>(
-				obs_data_create_from_json_file_safe(_data_path.string().c_str(), _data_path_bk.string().c_str()),
-				::own3d::data_deleter);
+			_data = std::shared_ptr<obs_data_t>(obs_data_create_from_json_file_safe(_data_path.string().c_str(), ".bk"),
+												::own3d::data_deleter);
 		} else {
 			_data = std::shared_ptr<obs_data_t>(obs_data_create(), ::own3d::data_deleter);
 		}
@@ -93,7 +92,7 @@ std::shared_ptr<obs_data_t> own3d::configuration::get()
 
 void own3d::configuration::save()
 {
-	obs_data_save_json_safe(_data.get(), _data_path.string().c_str(), ".tmp", _data_path_bk.string().c_str());
+	obs_data_save_json_safe(_data.get(), _data_path.string().c_str(), ".tmp", ".bk");
 }
 
 std::shared_ptr<own3d::configuration> own3d::configuration::_instance = nullptr;
