@@ -26,22 +26,29 @@ namespace own3d::source {
 		std::shared_ptr<obs_source_t>           _browser;
 		std::pair<std::uint32_t, std::uint32_t> _size;
 		std::string                             _url;
+		bool                                    _initialized;
 
 		public:
 		alert_instance(obs_data_t*, obs_source_t*);
 		virtual ~alert_instance();
 
-		void load(obs_data_t* settings) override;
+		void apply_settings(obs_data_t* data);
 
-		void migrate(obs_data_t* settings, std::uint64_t version) override;
+		void load(obs_data_t* data) override;
+
+		void migrate(obs_data_t* data, std::uint64_t version) override;
+
+		bool parse_size_text(std::string_view text, uint32_t& size, bool w_or_h);
 
 		bool parse_size(std::string_view text);
 
 		bool parse_alert_type();
 
-		void update(obs_data_t* settings) override;
+		bool parse_settings(obs_data_t* data);
 
-		void save(obs_data_t* settings) override;
+		void update(obs_data_t* data) override;
+
+		void save(obs_data_t* data) override;
 
 		std::uint32_t width() override;
 

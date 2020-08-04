@@ -1,4 +1,5 @@
 #include "source-labels.hpp"
+#include <algorithm>
 
 // Need to wrap around browser source.
 // Dropdown to select label type.
@@ -78,22 +79,47 @@ obs_properties_t* own3d::source::label_factory::get_properties2(own3d::source::l
 }
 
 own3d::source::label_instance::label_instance(obs_data_t* data, obs_source_t* self)
-	: obs::source_instance(data, self), _size(), _url()
+	: obs::source_instance(data, self), _size(), _url(), _initialized(false)
 {
+	// Set reasonable defaults.
+	_size.first  = 128;
+	_size.second = 128;
+	_url         = "https://own3d.tv/";
+
+	// If there are settings already, parse them.
+	if (data)
+		parse_settings(data);
+
+	// Create a custom obs_data_t for the browser source to use.
+	auto bdata = std::shared_ptr<obs_data_t>(obs_data_create(), [](obs_data_t* v) { obs_data_release(v); });
+	apply_settings(bdata.get());
+
+	// Create browser with existing settings.
 	_browser = std::shared_ptr<obs_source_t>(
-		obs_source_create_private("browser_source", obs_source_get_name(_self), nullptr), own3d::source_deleter);
+		obs_source_create_private("browser_source", obs_source_get_name(_self), bdata.get()), own3d::source_deleter);
 	if (!_browser)
 		throw std::runtime_error("Failed to create browser source.");
 
-	if (data)
-		load(data);
+	// Trigger a load event.
+	obs_source_load(_browser.get());
 }
 
 own3d::source::label_instance::~label_instance() {}
 
-void own3d::source::label_instance::load(obs_data_t* settings)
+void own3d::source::label_instance::apply_settings(obs_data_t* data)
 {
-	update(settings);
+	obs_data_set_int(data, "width", std::max<int64_t>(16, _size.first));
+	obs_data_set_int(data, "height", std::max<int64_t>(16, _size.second));
+	obs_data_set_bool(data, "fps_custom", false);
+	obs_data_set_bool(data, "reroute_audio", true);
+	obs_data_set_bool(data, "restart_when_active", false);
+	obs_data_set_bool(data, "shutdown", true);
+	obs_data_set_string(data, "url", _url.c_str());
+}
+
+void own3d::source::label_instance::load(obs_data_t* data)
+{
+	update(data);
 }
 
 void own3d::source::label_instance::migrate(obs_data_t*, std::uint64_t) {}
@@ -153,37 +179,37 @@ bool own3d::source::label_instance::parse_label_type(std::string type)
 	return true;
 }
 
-void own3d::source::label_instance::update(obs_data_t* settings)
+bool own3d::source::label_instance::parse_settings(obs_data_t* data)
 {
-	bool refresh = false;
-	refresh      = refresh || parse_size(obs_data_get_string(settings, KEY_SIZE));
-	refresh      = refresh || parse_label_type(obs_data_get_string(settings, KEY_TYPE));
+	bool refresh = !_initialized;
+	refresh      = parse_size(obs_data_get_string(data, KEY_SIZE)) || refresh;
+	refresh      = parse_label_type(obs_data_get_string(data, KEY_TYPE)) || refresh;
 
-	if (refresh) { // Update browser source
-		auto bdata = std::shared_ptr<obs_data_t>(obs_source_get_settings(_browser.get()), own3d::data_deleter);
+	return refresh;
+}
 
-		obs_data_set_int(bdata.get(), "width", _size.first);
-		obs_data_set_int(bdata.get(), "height", _size.second);
-		obs_data_set_bool(bdata.get(), "fps_custom", false);
-		obs_data_set_bool(bdata.get(), "reroute_audio", true);
-		obs_data_set_bool(bdata.get(), "restart_when_active", false);
-		obs_data_set_bool(bdata.get(), "shutdown", true);
-		obs_data_set_string(bdata.get(), "url", _url.c_str());
+void own3d::source::label_instance::update(obs_data_t* data)
+{
+	if (!parse_settings(data))
+		return;
 
-		obs_source_update(_browser.get(), bdata.get());
-	}
+	std::shared_ptr<obs_data_t> bdata(obs_source_get_settings(_browser.get()), own3d::data_deleter);
+	apply_settings(bdata.get());
+	obs_source_update(_browser.get(), bdata.get());
+
+	_initialized = true;
 }
 
 void own3d::source::label_instance::save(obs_data_t*) {}
 
 std::uint32_t own3d::source::label_instance::width()
 {
-	return _size.first;
+	return std::max<uint32_t>(1, _size.first);
 }
 
 std::uint32_t own3d::source::label_instance::height()
 {
-	return _size.second;
+	return std::max<uint32_t>(1, _size.second);
 }
 
 void own3d::source::label_instance::video_tick(float_t) {}
