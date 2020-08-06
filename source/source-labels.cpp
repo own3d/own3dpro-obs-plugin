@@ -1,5 +1,6 @@
 #include "source-labels.hpp"
 #include <algorithm>
+#include <string_view>
 
 // Need to wrap around browser source.
 // Dropdown to select label type.
@@ -15,6 +16,8 @@
 #define STR_TYPE_TOP_CHEER STR_TYPE ".CheerTop"
 #define STR_TYPE_TOP_DONATION STR_TYPE ".DonationTop"
 #define STR_TYPE_COUNTDOWN STR_TYPE ".Countdown"
+#define STR_COLOR STR ".Color"
+#define STR_FONT STR ".Font"
 
 #define KEY_SIZE "Size"
 #define KEY_TYPE "Type"
@@ -25,6 +28,18 @@
 #define KEY_TYPE_TOP_CHEER "top-cheer"
 #define KEY_TYPE_TOP_DONATION "top-donation"
 #define KEY_TYPE_COUNTDOWN "countdown"
+#define KEY_COLOR "Color"
+#define KEY_FONT "Font"
+
+static constexpr std::string_view fonts[] = {
+	"Gotham Ultra", "Nemesis Grant",  "Roboto",     "Open Sans",        "Oswald",        "Ubuntu",
+	"Bangers",      "Anton",          "Lobster",    "Pacifico",         "Righteous",     "Bebas Neue",
+	"Teko",         "Fredoka One",    "Patua One",  "Permanent Marker", "Cinzel",        "Alfa Slab One",
+	"Luckiest Guy", "Press Start 2P", "Squada One", "Sigmar One",       "Audiowide",     "Black Ops One",
+	"Chewy",        "Bungee",         "Shojumaru",  "Wallpoet",         "Slackey",       "Vampiro One",
+	"Pirata One",   "UnifrakturCook", "Sancreek",   "Arbutus",          "Built Titling", "Evogria",
+	"Qualy",        "Azonix",         "Brick Sans",
+};
 
 own3d::source::label_factory::label_factory()
 {
@@ -73,6 +88,18 @@ obs_properties_t* own3d::source::label_factory::get_properties2(own3d::source::l
 		obs_property_list_add_string(p, D_TRANSLATE(STR_TYPE_LATEST_DONATION), KEY_TYPE_LATEST_DONATION);
 		obs_property_list_add_string(p, D_TRANSLATE(STR_TYPE_TOP_DONATION), KEY_TYPE_TOP_DONATION);
 		obs_property_list_add_string(p, D_TRANSLATE(STR_TYPE_COUNTDOWN), KEY_TYPE_COUNTDOWN);
+	}
+
+	{
+		obs_properties_add_color(prs, KEY_COLOR, D_TRANSLATE(STR_COLOR));
+	}
+
+	{
+		auto* p =
+			obs_properties_add_list(prs, KEY_FONT, D_TRANSLATE(STR_FONT), OBS_COMBO_TYPE_LIST, OBS_COMBO_FORMAT_STRING);
+		for (auto f : fonts) {
+			obs_property_list_add_string(p, f.data(), f.data());
+		}
 	}
 
 	return prs;
@@ -163,12 +190,12 @@ bool own3d::source::label_instance::parse_size(std::string_view text)
 	return res;
 }
 
-bool own3d::source::label_instance::parse_label_type(std::string type)
+bool own3d::source::label_instance::parse_label(std::string_view type, uint32_t color, std::string_view font)
 {
 	std::vector<char> buffer(2048);
-	std::string       format = own3d::get_api_endpoint("obs/browser-source/%s/label?label=%s");
-	buffer.resize(
-		snprintf(buffer.data(), buffer.size(), format.c_str(), own3d::get_unique_identifier().data(), type.c_str()));
+	std::string format = own3d::get_api_endpoint("obs/browser-source/%s/label?label=%s&font-family=%s&color=%08X");
+	buffer.resize(snprintf(buffer.data(), buffer.size(), format.c_str(), own3d::get_unique_identifier().data(),
+						   type.data(), font.data(), color));
 
 	std::string url = std::string(buffer.data(), buffer.data() + buffer.size());
 	if (_url.compare(url) == 0) {
@@ -183,7 +210,9 @@ bool own3d::source::label_instance::parse_settings(obs_data_t* data)
 {
 	bool refresh = !_initialized;
 	refresh      = parse_size(obs_data_get_string(data, KEY_SIZE)) || refresh;
-	refresh      = parse_label_type(obs_data_get_string(data, KEY_TYPE)) || refresh;
+	refresh      = parse_label(obs_data_get_string(data, KEY_TYPE), static_cast<uint32_t>(obs_data_get_int(data, KEY_COLOR)),
+                          obs_data_get_string(data, KEY_FONT))
+			  || refresh;
 
 	return refresh;
 }

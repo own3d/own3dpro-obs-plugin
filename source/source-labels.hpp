@@ -40,7 +40,7 @@ namespace own3d::source {
 
 		bool parse_size(std::string_view text);
 
-		bool parse_label_type(std::string type);
+		bool parse_label(std::string_view type, uint32_t color, std::string_view font);
 
 		bool parse_settings(obs_data_t* data);
 
