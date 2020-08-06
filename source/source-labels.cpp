@@ -32,13 +32,12 @@
 #define KEY_FONT "Font"
 
 static constexpr std::string_view fonts[] = {
-	"Gotham Ultra", "Nemesis Grant",  "Roboto",     "Open Sans",        "Oswald",        "Ubuntu",
-	"Bangers",      "Anton",          "Lobster",    "Pacifico",         "Righteous",     "Bebas Neue",
-	"Teko",         "Fredoka One",    "Patua One",  "Permanent Marker", "Cinzel",        "Alfa Slab One",
-	"Luckiest Guy", "Press Start 2P", "Squada One", "Sigmar One",       "Audiowide",     "Black Ops One",
-	"Chewy",        "Bungee",         "Shojumaru",  "Wallpoet",         "Slackey",       "Vampiro One",
-	"Pirata One",   "UnifrakturCook", "Sancreek",   "Arbutus",          "Built Titling", "Evogria",
-	"Qualy",        "Azonix",         "Brick Sans",
+	"Alfa Slab One", "Anton",          "Arbutus",          "Audiowide",    "Azonix",         "Bangers",    "Bebas Neue",
+	"Black Ops One", "Brick Sans",     "Built Titling",    "Bungee",       "Chewy",          "Cinzel",     "Evogria",
+	"Fredoka One",   "Gotham Ultra",   "Lobster",          "Luckiest Guy", "Nemesis Grant",  "Open Sans",  "Oswald",
+	"Pacifico",      "Patua One",      "Permanent Marker", "Pirata One",   "Press Start 2P", "Qualy",      "Righteous",
+	"Roboto",        "Sancreek",       "Shojumaru",        "Sigmar One",   "Slackey",        "Squada One", "Teko",
+	"Ubuntu",        "UnifrakturCook", "Vampiro One",      "Wallpoet",
 };
 
 own3d::source::label_factory::label_factory()
@@ -68,6 +67,8 @@ void own3d::source::label_factory::get_defaults2(obs_data_t* data)
 {
 	obs_data_set_default_string(data, KEY_SIZE, "256x64");
 	obs_data_set_default_string(data, KEY_TYPE, KEY_TYPE_LATEST_FOLLOW);
+	obs_data_set_default_int(data, KEY_COLOR, 0xFFFFFFFF);
+	obs_data_set_default_string(data, KEY_FONT, fonts[0].data());
 }
 
 obs_properties_t* own3d::source::label_factory::get_properties2(own3d::source::label_instance*)
@@ -210,8 +211,8 @@ bool own3d::source::label_instance::parse_settings(obs_data_t* data)
 {
 	bool refresh = !_initialized;
 	refresh      = parse_size(obs_data_get_string(data, KEY_SIZE)) || refresh;
-	refresh      = parse_label(obs_data_get_string(data, KEY_TYPE), static_cast<uint32_t>(obs_data_get_int(data, KEY_COLOR)),
-                          obs_data_get_string(data, KEY_FONT))
+	refresh      = parse_label(obs_data_get_string(data, KEY_TYPE), //
+                          static_cast<uint32_t>(obs_data_get_int(data, KEY_COLOR)), obs_data_get_string(data, KEY_FONT))
 			  || refresh;
 
 	return refresh;
