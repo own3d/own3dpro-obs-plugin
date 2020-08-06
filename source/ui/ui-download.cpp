@@ -138,14 +138,12 @@ static void replace_tokens(obs_data_t* data, std::string base_directory_path)
 				string = cstr;
 			}
 
-			while (std::string::size_type pos = string.find(TOKEN_PATH)) {
-				if (pos == std::string::npos)
-					break;
+			for (std::string::size_type pos = string.find(TOKEN_PATH); pos != std::string::npos;
+				 pos                        = string.find(TOKEN_PATH)) {
 				string = string.replace(pos, TOKEN_PATH.length(), base_directory_path);
 			}
-			while (std::string::size_type pos = string.find(TOKEN_UUID)) {
-				if (pos == std::string::npos)
-					break;
+			for (std::string::size_type pos = string.find(TOKEN_UUID); pos != std::string::npos;
+				 pos                        = string.find(TOKEN_UUID)) {
 				string = string.replace(pos, TOKEN_UUID.length(), machine_token);
 			}
 
