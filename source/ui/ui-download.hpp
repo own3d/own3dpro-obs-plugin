@@ -50,6 +50,8 @@ namespace own3d::ui {
 		void install_status(bool complete);
 
 		void error();
+
+		void switch_collection(QString new_collection);
 	};
 
 	class installer : public QDialog, public Ui::ThemeDownload {
@@ -80,6 +82,8 @@ namespace own3d::ui {
 		void handle_extract_status(uint64_t now_files, uint64_t total_files, uint64_t now_bytes, uint64_t total_bytes);
 
 		void handle_install_status(bool complete);
+
+		void handle_switch_collection(QString new_collection);
 
 		signals:
 		; // Needed by some linters.

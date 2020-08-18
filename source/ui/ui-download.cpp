@@ -1,6 +1,7 @@
 #include "ui-download.hpp"
 #include <cmath>
 #include <limits>
+#include <set>
 #include <sstream>
 #include "json/json.hpp"
 #include "plugin.hpp"
@@ -93,34 +94,6 @@ void own3d::ui::installer_thread::run_extract()
 	}
 }
 
-static void assign_generic_source_info(obs_source_t* _child, std::shared_ptr<obs_data_t> data)
-{
-	// Interlacing
-	obs_source_set_deinterlace_mode(
-		_child, static_cast<obs_deinterlace_mode>(obs_data_get_int(data.get(), "deinterlace_mode")));
-	obs_source_set_deinterlace_field_order(
-		_child, static_cast<obs_deinterlace_field_order>(obs_data_get_int(data.get(), "deinterlace_field_order")));
-
-	// Audio
-	obs_source_set_balance_value(_child, obs_data_get_double(data.get(), "balance"));
-	obs_source_set_audio_mixers(_child, obs_data_get_int(data.get(), "mixers"));
-	obs_source_set_volume(_child, obs_data_get_double(data.get(), "volume"));
-	obs_source_set_muted(_child, obs_data_get_bool(data.get(), "muted"));
-	obs_source_set_sync_offset(_child, obs_data_get_int(data.get(), "sync"));
-	obs_source_set_monitoring_type(_child,
-								   static_cast<obs_monitoring_type>(obs_data_get_int(data.get(), "monitoring-type")));
-
-	// Hotkeys
-	obs_source_enable_push_to_mute(_child, obs_data_get_bool(data.get(), "push-to-mute"));
-	obs_source_set_push_to_mute_delay(_child, obs_data_get_int(data.get(), "push-to-mute-delay"));
-	obs_source_enable_push_to_talk(_child, obs_data_get_bool(data.get(), "push-to-talk"));
-	obs_source_set_push_to_talk_delay(_child, obs_data_get_int(data.get(), "push-to-talk-delay"));
-
-	// Other
-	obs_source_set_enabled(_child, obs_data_get_bool(data.get(), "enabled"));
-	obs_source_set_flags(_child, obs_data_get_int(data.get(), "flags"));
-}
-
 static void replace_tokens(obs_data_t* data, std::string base_directory_path)
 {
 	constexpr std::string_view TOKEN_PATH = "<REPLACE|ME>";
@@ -158,265 +131,195 @@ static void replace_tokens(obs_data_t* data, std::string base_directory_path)
 	}
 }
 
-static void parse_filters_for_source(obs_source_t* source, std::shared_ptr<obs_data_array_t> filters)
+static void adjust_collection_entry(std::shared_ptr<obs_data_t> data, std::string base_path)
 {
-	for (size_t idx = 0, edx = obs_data_array_count(filters.get()); idx < edx; idx++) {
-		// Filters are basically a list of sources that belong to a certain source and are unique to that source.
-		// Their data is identical to any other source.
-		std::shared_ptr<obs_data_t> item{obs_data_array_item(filters.get(), idx), own3d::data_deleter};
+	auto settings = std::shared_ptr<obs_data_t>(obs_data_get_obj(data.get(), "settings"), own3d::data_deleter);
+	if (!settings)
+		return;
 
-		// Skip any source that has no name or an invalid name.
-		const char* name = obs_data_get_string(item.get(), "name");
-		if ((!name) || (strlen(name) <= 0))
-			continue;
+	replace_tokens(settings.get(), base_path);
+}
 
-		// If it has a name, let's try to create it.
-		std::string                 id = obs_data_get_string(item.get(), "id");
-		std::shared_ptr<obs_data_t> settings{obs_data_get_obj(item.get(), "settings"), own3d::data_deleter};
+static void adjust_collection_entries(std::shared_ptr<obs_data_array_t> data, std::string base_path)
+{
+	for (size_t idx = 0, edx = obs_data_array_count(data.get()); idx < edx; idx++) {
+		auto obj = std::shared_ptr<obs_data_t>(obs_data_array_item(data.get(), idx), own3d::data_deleter);
+		adjust_collection_entry(obj, base_path);
 
-		std::shared_ptr<obs_source_t> filter{obs_source_create_private(id.c_str(), name, settings.get()),
-											 own3d::source_deleter};
-		if (!filter) {
-			// If creation of the source failed, skip the source.
-			continue;
-		}
-
-		// Assign generic data.
-		assign_generic_source_info(filter.get(), item);
-
-		// Attach to parent source.
-		obs_source_filter_add(source, filter.get());
-
-		// Load filter.
-		obs_source_load(filter.get());
+		auto filters =
+			std::shared_ptr<obs_data_array_t>(obs_data_get_array(obj.get(), "filters"), own3d::data_array_deleter);
+		if (filters)
+			adjust_collection_entries(filters, base_path);
 	}
 }
 
-static void parse_source(std::shared_ptr<obs_data_t> item, std::string path)
+static void adjust_collection(std::shared_ptr<obs_data_t> data, std::string name, std::string base_path)
 {
-	const char* name = obs_data_get_string(item.get(), "name");
-	const char* id   = obs_data_get_string(item.get(), "id");
+	// Need to adjust:
+	// data.transitions
+	// data.sources
+	// data.sources[...].filters
+	// data.groups[...].filters
 
-	if ((!name || (strlen(name) == 0)) || (!id || (strlen(id) == 0))) {
-		return;
-	}
+	auto groups =
+		std::shared_ptr<obs_data_array_t>(obs_data_get_array(data.get(), "groups"), own3d::data_array_deleter);
+	auto sources =
+		std::shared_ptr<obs_data_array_t>(obs_data_get_array(data.get(), "sources"), own3d::data_array_deleter);
+	auto transitions =
+		std::shared_ptr<obs_data_array_t>(obs_data_get_array(data.get(), "transitions"), own3d::data_array_deleter);
 
-	if ((strcmp(id, "scene") == 0) || (strcmp(id, "group") == 0)) {
-		return;
-	}
+	if (groups)
+		adjust_collection_entries(groups, base_path);
+	if (sources)
+		adjust_collection_entries(sources, base_path);
+	if (transitions)
+		adjust_collection_entries(transitions, base_path);
 
-	std::shared_ptr<obs_data_t> settings{obs_data_get_obj(item.get(), "settings"),
-										 [](obs_data_t* v) { own3d::data_deleter(v); }};
-
-	// Need to convert all relative paths to proper paths.
-	replace_tokens(settings.get(), path);
-
-	// Create the source
-	obs_source_t* source = obs_source_create(id, name, settings.get(), nullptr);
-	assign_generic_source_info(source, item);
-
-	// But wait, there's more! Filters.
-	parse_filters_for_source(source, std::shared_ptr<obs_data_array_t>{obs_data_get_array(item.get(), "filters"),
-																	   own3d::data_array_deleter});
+	// Update name.
+	obs_data_set_string(data.get(), "name", name.c_str());
 }
 
-static void parse_scene(std::shared_ptr<obs_data_t> item, std::string path)
+static std::string make_filename(std::string name)
 {
-	const char* name = obs_data_get_string(item.get(), "name");
-	const char* id   = obs_data_get_string(item.get(), "id");
+	size_t       base_len = name.length();
+	size_t       len      = os_utf8_to_wcs(name.data(), base_len, nullptr, 0);
+	std::wstring wfile;
 
-	if ((!name || (strlen(name) == 0)) || (!id || (strlen(id) == 0))) {
-		return;
+	if (!len)
+		return name;
+
+	wfile.resize(len);
+	os_utf8_to_wcs(name.data(), base_len, &wfile[0], len + 1);
+
+	for (size_t i = wfile.size(); i > 0; i--) {
+		size_t im1 = i - 1;
+
+		if (iswspace(wfile[im1])) {
+			wfile[im1] = '_';
+		} else if (wfile[im1] != '_' && !iswalnum(wfile[im1])) {
+			wfile.erase(im1, 1);
+		}
 	}
 
-	if (strcmp(id, "scene") != 0) {
-		return;
-	}
+	if (wfile.size() == 0)
+		wfile = L"characters_only";
 
-	std::shared_ptr<obs_data_t> settings{obs_data_get_obj(item.get(), "settings"),
-										 [](obs_data_t* v) { own3d::data_deleter(v); }};
+	len = os_wcs_to_utf8(wfile.c_str(), wfile.size(), nullptr, 0);
+	if (!len)
+		return name;
 
-	// Need to convert all relative paths to proper paths.
-	replace_tokens(settings.get(), path);
+	name.resize(len);
+	os_wcs_to_utf8(wfile.c_str(), wfile.size(), name.data(), len + 1);
 
-	// Create the source
-	obs_scene_t*  scene  = obs_scene_create(name);
-	obs_source_t* source = obs_scene_get_source(scene);
-	assign_generic_source_info(source, item);
-
-	// But wait, there's more! Filters.
-	parse_filters_for_source(source, std::shared_ptr<obs_data_array_t>{obs_data_get_array(item.get(), "filters"),
-																	   own3d::data_array_deleter});
-
-	// And now we add the actual items.
-	std::shared_ptr<obs_data_array_t> items{obs_data_get_array(settings.get(), "items"), own3d::data_array_deleter};
-	for (size_t idx = 0, edx = obs_data_array_count(items.get()); idx < edx; idx++) {
-		vec2               pos;
-		vec2               scale;
-		vec2               bounds;
-		obs_sceneitem_crop crop;
-
-		std::shared_ptr<obs_data_t> obj{obs_data_array_item(items.get(), idx), own3d::data_deleter};
-		if (!obj) {
-			continue;
-		}
-
-		const char* name = obs_data_get_string(obj.get(), "name");
-		if (!name) {
-			continue;
-		}
-
-		auto _child = obs_get_source_by_name(name);
-		if (!_child) {
-			continue;
-		}
-
-		obs_sceneitem_t* item = obs_scene_add(scene, _child);
-		if (!item) {
-			continue;
-		}
-
-		obs_sceneitem_set_alignment(item, obs_data_get_int(obj.get(), "align"));
-		obs_data_get_vec2(obj.get(), "bounds", &bounds);
-		obs_sceneitem_set_bounds(item, &bounds);
-		obs_sceneitem_set_bounds_alignment(item, obs_data_get_int(obj.get(), "bounds_align"));
-		obs_sceneitem_set_bounds_type(item, static_cast<obs_bounds_type>(obs_data_get_int(obj.get(), "bounds_type")));
-		crop.left   = obs_data_get_int(obj.get(), "crop_left");
-		crop.right  = obs_data_get_int(obj.get(), "crop_right");
-		crop.top    = obs_data_get_int(obj.get(), "crop_top");
-		crop.bottom = obs_data_get_int(obj.get(), "crop_bottom");
-		obs_sceneitem_set_crop(item, &crop);
-		obs_sceneitem_set_locked(item, obs_data_get_bool(obj.get(), "locked"));
-		obs_data_get_vec2(obj.get(), "pos", &pos);
-		obs_sceneitem_set_pos(item, &pos);
-		obs_sceneitem_set_rot(item, obs_data_get_double(obj.get(), "rot"));
-		obs_data_get_vec2(obj.get(), "scale", &scale);
-		obs_sceneitem_set_scale(item, &scale);
-		obs_sceneitem_set_scale_filter(item, static_cast<obs_scale_type>(obs_data_get_int(obj.get(), "scale_filter")));
-		obs_sceneitem_set_visible(item, obs_data_get_bool(obj.get(), "visible"));
-		obs_sceneitem_force_update_transform(item);
-	}
-
-	obs_frontend_set_current_scene(source);
-	obs_frontend_set_current_preview_scene(source);
-}
-
-static void parse_transition(std::shared_ptr<obs_data_t> item, std::string path)
-{
-	const char* name = obs_data_get_string(item.get(), "name");
-	const char* id   = obs_data_get_string(item.get(), "id");
-
-	if ((!name || (strlen(name) == 0)) || (!id || (strlen(id) == 0))) {
-		return;
-	}
-
-	std::shared_ptr<obs_data_t> settings{obs_data_get_obj(item.get(), "settings"),
-										 [](obs_data_t* v) { obs_data_release(v); }};
-
-	// Need to convert all relative paths to proper paths.
-	replace_tokens(settings.get(), path);
-
-	// Create the transition.
-	//obs_source_t* source = obs_source_create(id, name, settings.get(), nullptr);
-
-	//obs_frontend_set_current_transition(source);
+	return name;
 }
 
 void own3d::ui::installer_thread::run_install()
 {
 	std::shared_ptr<obs_data_t> data;
+	std::string                 name = _name;
+	std::string                 file_name;
+	std::filesystem::path       file_path;
+	std::filesystem::path       collection_path = std::filesystem::absolute(
+        std::filesystem::path(_out_path).append("..").append("..").append("..").append("..").append("basic").append(
+            "scenes"));
 
 	emit install_status(false);
 
-	{ // Load the file.
-		std::filesystem::path data_path = _out_path;
-		data_path.append("data.json");
-		if (!std::filesystem::exists(data_path)) {
-			throw std::runtime_error("data.json missing");
+	// While there is no direct way to trigger a refresh of the scene collections,
+	// we can actually do this by switching scene collection. So to make things work:
+	// 1. Get the name of the current scene collection.
+	// 2. Create a new scene collection.
+	// 3. Switch back to the previous collection.
+	// 4. Swap out the JSON of the scene collection.
+	// 5. Switch back to the new collection.
+	// 6. ???
+	// 7. Profit
+
+	// Step 1: Generate a new unique collection name.
+	{
+		std::set<std::string> names;
+		{
+			char** names_raw = obs_frontend_get_scene_collections();
+			for (char** ptr = names_raw; *ptr != nullptr; ptr++) {
+				names.emplace(*ptr);
+			}
+			bfree(names_raw);
 		}
 
-		std::string data_path_str = data_path.string();
-		data = std::shared_ptr<obs_data_t>(obs_data_create_from_json_file(data_path_str.c_str()), own3d::data_deleter);
-	}
+		if (names.find(name) != names.end()) {
+			std::stringstream sstr;
 
-	// Find a valid scene collection name.
-	std::string collection_name = _name;
-	{
-		char** collections = obs_frontend_get_scene_collections();
-		bool   found_name  = false;
-		for (size_t n = 0; !found_name; n++) {
-			found_name = true;
-			for (char** ptr = collections; *ptr != nullptr; ptr++) {
-				if (collection_name == (*ptr)) {
-					found_name = false;
+			// Name already exists, make it unique.
+			for (size_t idx = 1; true; idx++) {
+				sstr.str(std::string());
+				sstr << name;
+				sstr << " (" << idx << ")";
+				std::string test = sstr.str();
+				if (names.find(test) == names.end()) {
+					// We found a new unique name, so use it.
+					name = test;
 					break;
 				}
 			}
-			if (!found_name) {
-				std::stringstream sstr;
-				sstr << _name << " " << (n + 1);
-				collection_name = sstr.str();
+		}
+	}
+
+	// Step 2: Generate a unique file name (unique collection name does not guarantee this).
+	{
+		file_name = make_filename(name);
+		file_path = std::filesystem::path(collection_path).append(file_name).concat(".json");
+
+		if (std::filesystem::exists(file_path)) {
+			std::stringstream sstr;
+
+			// Name already exists, make it unique.
+			for (size_t idx = 1; true; idx++) {
+				sstr.str(std::string());
+				sstr << idx << ".json";
+				file_path = std::filesystem::path(collection_path).append(file_name).concat(sstr.str());
+				if (!std::filesystem::exists(file_path)) {
+					break;
+				}
 			}
 		}
 	}
 
-	// Create a collection.
-	if (!obs_frontend_add_scene_collection(collection_name.c_str())) {
-		throw std::runtime_error("Failed to create a scene collection.");
-	}
-
-	// Begin with importing.
-	obs_source_t* default_scene;
-	{ // First let's rename the default scene to something completely nonsensical.
-		obs_enum_scenes(
-			[](void* ptr, obs_source_t* src) {
-				*reinterpret_cast<obs_source_t**>(ptr) = src;
-				return false;
-			},
-			&default_scene);
-		if (default_scene != nullptr) {
-			obs_source_set_name(default_scene, "OWN3D.TV Scene Import Successful - delete this Scene");
-		}
-	}
-
+	// Step 3: Load the extracted JSON file and apply fixes.
 	{
-		std::shared_ptr<obs_data_array_t> darr =
-			std::shared_ptr<obs_data_array_t>(obs_data_get_array(data.get(), "sources"), data_array_deleter);
+		auto data_path = _out_path;
+		data_path      = data_path.append("data.json");
 
-		// Create all sources first which are neither scenes or groups.
-		for (size_t idx = 0, edx = obs_data_array_count(darr.get()); idx < edx; idx++) {
-			auto item = std::shared_ptr<obs_data_t>{obs_data_array_item(darr.get(), idx), data_deleter};
-			parse_source(item, _out_path.string());
+		if (!std::filesystem::exists(data_path)) {
+			throw std::runtime_error("Unable to install, missing data.json file.");
 		}
 
-		// Then create all scenes (NOT groups).
-		for (size_t idx = 0, edx = obs_data_array_count(darr.get()); idx < edx; idx++) {
-			auto item = std::shared_ptr<obs_data_t>{obs_data_array_item(darr.get(), idx), data_deleter};
-			parse_scene(item, _out_path.string());
+		data.reset(obs_data_create_from_json_file(data_path.string().c_str()), own3d::data_deleter);
+		if (!data) {
+			throw std::runtime_error("Failed to install theme, data.json may be corrupted.");
 		}
 
-		// Trigger the load hook on all sources but not scenes or groups.
-		obs_enum_sources(
-			[](void*, obs_source_t* src) {
-				obs_source_load(src);
-				return false;
-			},
-			nullptr);
+		adjust_collection(data, name, std::filesystem::absolute(_out_path).string());
 	}
 
-	{ // Create all transitions.
-		std::shared_ptr<obs_data_array_t> darr =
-			std::shared_ptr<obs_data_array_t>(obs_data_get_array(data.get(), "transitions"), data_array_deleter);
-
-		// Create all sources first which are neither scenes or groups.
-		for (size_t idx = 0, edx = obs_data_array_count(darr.get()); idx < edx; idx++) {
-			auto item = std::shared_ptr<obs_data_t>{obs_data_array_item(darr.get(), idx), data_deleter};
-			parse_transition(item, _out_path.string());
-		}
+	// Step 3: Store current scene collection, and create new temporary one.
+	std::string cur = obs_frontend_get_current_scene_collection();
+	obs_frontend_add_scene_collection(name.c_str());
+	emit switch_collection(QString::fromStdString(cur));
+	for (; strcmp(obs_frontend_get_current_scene_collection(), cur.c_str()) != 0;) {
+		std::this_thread::sleep_for(std::chrono::milliseconds(100));
 	}
 
-	// Release default scene.
-	obs_source_remove(default_scene);
+	// Step 4: Save JSON as new file.
+	if (!obs_data_save_json_safe(data.get(), file_path.string().c_str(), ".tmp", ".bk")) {
+		throw std::runtime_error("Failed to install theme, unable to write output file.");
+	}
+
+	// Step 5: Switch to the new scene collection.
+	emit switch_collection(QString::fromStdString(name));
+	for (; strcmp(obs_frontend_get_current_scene_collection(), name.c_str()) != 0;) {
+		std::this_thread::sleep_for(std::chrono::milliseconds(100));
+	}
 
 	emit install_status(true);
 	obs_frontend_save();
@@ -487,6 +390,8 @@ own3d::ui::installer::installer(const QUrl& url, const QString& name, const QStr
 			Qt::QueuedConnection);
 	connect(_worker, &own3d::ui::installer_thread::install_status, this, &own3d::ui::installer::handle_install_status,
 			Qt::QueuedConnection);
+	connect(_worker, &own3d::ui::installer_thread::switch_collection, this,
+			&own3d::ui::installer::handle_switch_collection, Qt::QueuedConnection);
 	_worker->start();
 }
 
@@ -555,4 +460,9 @@ void own3d::ui::installer::handle_extract_status(uint64_t now_files, uint64_t to
 void own3d::ui::installer::handle_install_status(bool complete)
 {
 	update_progress(complete ? 1.0 : 0.0, false, false, true);
+}
+
+void own3d::ui::installer::handle_switch_collection(QString new_collection)
+{
+	obs_frontend_set_current_scene_collection(new_collection.toUtf8().data());
 }
