@@ -11,6 +11,7 @@
 ; Do not use the same AppId value in installers for other applications.
 ; (To generate a new GUID, click Tools | Generate GUID inside the IDE.)
 AppId={{31A72556-7590-4678-AB69-96D602C95C02}}
+AppMutex={#MyAppName},Global\{#MyAppName}
 AppName={#MyAppName}
 AppVersion={#MyAppVersion}
 ;AppVerName={#MyAppName} {#MyAppVersion}
