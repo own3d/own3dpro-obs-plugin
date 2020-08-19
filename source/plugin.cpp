@@ -4,6 +4,7 @@
 #include "json/json.hpp"
 #include "source-alerts.hpp"
 #include "source-labels.hpp"
+#include "source-chat.hpp"
 #include "ui/ui.hpp"
 #include "util/curl.hpp"
 #include "util/systeminfo.hpp"
@@ -25,6 +26,7 @@ try {
 	{
 		static auto labels = std::make_shared<own3d::source::label_factory>();
 		static auto alerts = std::make_shared<own3d::source::alert_factory>();
+		static auto chat = std::make_shared<own3d::source::chat_factory>();
 	}
 
 	return true;
@@ -52,8 +54,8 @@ BOOL WINAPI DllMain(HINSTANCE, DWORD reason, LPVOID)
 	if (reason == DLL_PROCESS_ATTACH) {
 		std::string mtx_name  = obs_module_name();
 		std::string mtx_name2 = "Global\\" + mtx_name;
-		HANDLE      mtx1      = CreateMutexA(NULL, FALSE, mtx_name.c_str());
-		HANDLE      mtx2      = CreateMutexA(NULL, FALSE, mtx_name2.c_str());
+		CreateMutexA(NULL, FALSE, mtx_name.c_str());
+		CreateMutexA(NULL, FALSE, mtx_name2.c_str());
 	}
 
 	return TRUE;

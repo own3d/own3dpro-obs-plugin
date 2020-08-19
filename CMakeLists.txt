@@ -348,6 +348,8 @@ set(PROJECT_PRIVATE_SOURCE
 	"source/plugin.cpp"
 	"source/source-alerts.hpp"
 	"source/source-alerts.cpp"
+	"source/source-chat.hpp"
+	"source/source-chat.cpp"
 	"source/source-labels.hpp"
 	"source/source-labels.cpp"
 	"source/obs/obs-browser-panel.hpp"
