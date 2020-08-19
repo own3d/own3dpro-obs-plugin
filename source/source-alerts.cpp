@@ -149,7 +149,7 @@ bool own3d::source::alert_instance::parse_size(std::string_view text)
 bool own3d::source::alert_instance::parse_alert_type()
 {
 	std::vector<char> buffer(2048);
-	std::string       format = own3d::get_api_endpoint("obs/browser-source/%s/alerts");
+	std::string       format = own3d::get_api_endpoint("obs/browser-source/%s/components/alerts");
 	buffer.resize(snprintf(buffer.data(), buffer.size(), format.c_str(), own3d::get_unique_identifier().data()));
 
 	std::string url = std::string(buffer.data(), buffer.data() + buffer.size());
