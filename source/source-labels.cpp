@@ -194,7 +194,7 @@ bool own3d::source::label_instance::parse_size(std::string_view text)
 bool own3d::source::label_instance::parse_label(std::string_view type, uint32_t color, std::string_view font)
 {
 	std::vector<char> buffer(2048);
-	std::string format = own3d::get_api_endpoint("obs/browser-source/%s/label?label=%s&font-family=%s&color=%08X");
+	std::string format = own3d::get_api_endpoint("obs/browser-source/%s/components/%s?font-family=%s&color=%08X");
 	buffer.resize(snprintf(buffer.data(), buffer.size(), format.c_str(), own3d::get_unique_identifier().data(),
 						   type.data(), font.data(), color));
 
