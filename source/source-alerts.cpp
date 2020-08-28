@@ -98,7 +98,7 @@ void own3d::source::alert_instance::apply_settings(obs_data_t* data)
 	obs_data_set_int(data, "width", std::max<int64_t>(16, _size.first));
 	obs_data_set_int(data, "height", std::max<int64_t>(16, _size.second));
 	obs_data_set_bool(data, "fps_custom", false);
-	obs_data_set_bool(data, "reroute_audio", true);
+	obs_data_set_bool(data, "reroute_audio", false);
 	obs_data_set_bool(data, "restart_when_active", false);
 	obs_data_set_bool(data, "shutdown", true);
 	obs_data_set_string(data, "url", _url.c_str());
