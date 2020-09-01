@@ -41,7 +41,7 @@ jobs:
     - name: "Configure Project"
       shell: bash
       run: |
-        cmake -H. -B"build/temp" -DCMAKE_INSTALL_PREFIX="build/distrib" -DCMAKE_PACKAGE_NAME="own3d-${{ matrix.id }}" -DCMAKE_PACKAGE_PREFIX="build/package" -DOBS_DOWNLOAD=ON
+        cmake -H. -B"build/temp" -DCMAKE_INSTALL_PREFIX="build/distrib" -DCMAKE_PACKAGE_NAME="own3d-pro" -DCMAKE_PACKAGE_PREFIX="build/package" -DOBS_DOWNLOAD=ON
     - name: "Build Project"
       shell: bash
       run: |
