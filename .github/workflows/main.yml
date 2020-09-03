@@ -17,11 +17,13 @@ jobs:
         include:
           - runner: windows-2019
             id: windows2019
-            windows_sdk: "10.0.17763.0"
-            cmake_generator: "Visual Studio 15 2017 Win64"
+            windows_sdk: "10.0.18362.0"
+            cmake_generator: "Visual Studio 16 2019"
+            cmake_generator_platform: "x64"
     runs-on: ${{ matrix.runner }}
     env:
       CMAKE_GENERATOR: ${{ matrix.cmake_generator }}
+      CMAKE_GENERATOR_PLATFORM: ${{ matrix.cmake_generator_platform }}
       CMAKE_GENERATOR_TOOLSET: "host=x64"
       CMAKE_SYSTEM_VERSION: ${{ matrix.windows_sdk }}
     steps:
