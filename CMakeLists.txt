@@ -93,6 +93,55 @@ else()
 	set(ARCH "x64")
 endif()
 
+# Apply compiler specific changes.
+if(CMAKE_CXX_COMPILER_ID STREQUAL "MSVC" OR (WIN32 AND CMAKE_CXX_COMPILER_ID STREQUAL "Clang"))
+	message(STATUS "Applying custom flags for MSVC style build.")
+
+	# MSVC/ClangCL
+	# - Statically link Microsoft C/C++ Redistributable.
+	# - Enable /W3 and disable useless warnings.
+	# - Enable C++ exceptions with SEH exceptions.
+	# - Enable multi-processor compiling.
+
+	# Enable most useful warnings.
+	set(DISABLED_WARNINGS 
+		"/wd4061" "/wd4100" "/wd4180" "/wd4201" "/wd4464" "/wd4505" "/wd4514"
+		"/wd4571" "/wd4623" "/wd4625" "/wd4626" "/wd4668" "/wd4710" "/wd4774"
+		"/wd4820" "/wd5026" "/wd5027" "/wd5039" "/wd5045" "/wd26812"
+	)
+	add_compile_options("/W3")
+	foreach(WARN ${DISABLED_WARNINGS})
+		add_compile_options("${WARN}")
+	endforeach()
+
+	# Build with static MSVC linkage.
+    add_compile_options(
+        $<$<CONFIG:>:/MT>
+        $<$<CONFIG:Debug>:/MTd>
+        $<$<CONFIG:Release>:/MT>
+        $<$<CONFIG:RelWithDebInfo>:/MT>
+        $<$<CONFIG:MinSizeRel>:/MT>
+    )
+
+	# C++ Exceptions & SEH
+	add_compile_options("/EHa")
+
+	# Multiprocessor compiling
+	add_compile_options("/MP")
+
+elseif(CMAKE_CXX_COMPILER_ID STREQUAL "Clang" OR CMAKE_CXX_COMPILER_ID STREQUAL "AppleClang" OR CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+	message(STATUS "Applying custom flags for GNU style build.")
+	
+	# Clang/AppleClang/GNU
+	# - Don't export by default.
+	# - Enable all and extra warnings.
+	
+	add_compile_options("-Wall")
+	add_compile_options("-Wextra")
+	add_compile_options("-fvisibility=hidden")
+
+endif()
+
 # C++ Standard and Extensions
 ## Use C++17 and no non-standard extensions.
 set(_CXX_STANDARD 17)
