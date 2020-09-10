@@ -1,10 +1,22 @@
 # OWN3D Pro OBS Plugin
 
+[![Discord](https://discordapp.com/api/guilds/727651426305703956/embed.png?style=shield)](https://discord.gg/NyejWgn)
+
 With [OWN3D Pro](https://own3d.pro/) it’s easy to change Overlays and Alerts within a couple of seconds. The only thing you have to do is to choose your desired design and click install. Ready set go! [Join now for FREE!](https://own3d.pro/dashboard)
 
 ![OWN3D Pro OBS Plugin](https://assets.cdn.own3d.tv/production/uploads/own3dpro-obs-plugin.png)
 
 This application currently only supports 64-bit Windows.
+
+## Installation on Windows
+
+We offer a signed installer, published by own3d media GmbH, for 64-bit Windows. You can download and install the latest version via [own3d.pro](https://own3d.pro/) (or here via [direct-link](https://own3d.pro/download-plugin)). 
+
+## Join the OWN3D Devs & Testers Discord
+
+Official support is currently only available on our website. But we also offer a Discord Server for people who want to give us some feedback about our products. 
+
+[![Discord](https://discordapp.com/api/guilds/727651426305703956/embed.png?style=banner3)](https://discord.gg/NyejWgn)
 
 ## Compiling
 
