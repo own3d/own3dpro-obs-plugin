@@ -1,7 +1,14 @@
-Own3d.TV Integration
+# OWN3D Pro OBS Plugin
 
-# Compiling
-## Requirements
+With [OWN3D Pro](https://own3d.pro/) it’s easy to change Overlays and Alerts within a couple of seconds. The only thing you have to do is to choose your desired design and click install. Ready set go! [Join now for FREE!](https://own3d.pro/dashboard)
+
+![OWN3D Pro OBS Plugin](https://assets.cdn.own3d.tv/production/uploads/chrome_2020-09-10_13-57-31.png)
+
+This application currently only supports 64-bit Windows.
+
+## Compiling
+
+### Requirements
 * CMake 3.16 or newer
 * Visual Studio 2019 (Community works fine)* 
 * An internet connection
@@ -9,7 +16,7 @@ Own3d.TV Integration
 * Optional: Windows 10 SDK for 'signtool.exe'
 * Optional: InnoSetup for the installer
 
-## Steps to build for release
+### Steps to build for release
 1. Open CMake (GUI).
 2. Set Source directory to this directory.
 3. Set Build directory to `<this directory>/build/flux`.
