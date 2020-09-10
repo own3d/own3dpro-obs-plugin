@@ -2,7 +2,7 @@
 
 With [OWN3D Pro](https://own3d.pro/) it’s easy to change Overlays and Alerts within a couple of seconds. The only thing you have to do is to choose your desired design and click install. Ready set go! [Join now for FREE!](https://own3d.pro/dashboard)
 
-![OWN3D Pro OBS Plugin](https://assets.cdn.own3d.tv/production/uploads/chrome_2020-09-10_13-57-31.png)
+![OWN3D Pro OBS Plugin](https://assets.cdn.own3d.tv/production/uploads/own3dpro-obs-plugin.png)
 
 This application currently only supports 64-bit Windows.
 
