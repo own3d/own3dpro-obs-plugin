@@ -31,7 +31,7 @@ own3d::ui::browser::~browser() {}
 own3d::ui::browser::browser() : QDialog(reinterpret_cast<QWidget*>(obs_frontend_get_main_window()))
 {
 	// Styling and layout.
-	setMinimumSize(992, 558);
+	setMinimumSize(1300, 730);
 	{
 		_layout = new QVBoxLayout();
 		_layout->setContentsMargins(0, 0, 0, 0);
