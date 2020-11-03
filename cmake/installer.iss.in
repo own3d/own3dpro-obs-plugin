@@ -19,25 +19,33 @@ AppPublisher={#MyAppPublisher}
 AppPublisherURL={#MyAppURL}
 AppSupportURL={#MyAppURL}
 AppUpdatesURL={#MyAppURL}
-DefaultDirName={code:GetDirName}
-DefaultGroupName={#MyAppName}
+
+; Architecture (Platform is always Windows)
+ArchitecturesInstallIn64BitMode=@ARCH@
+ArchitecturesAllowed=@ARCH@
+
+; Other Information
 AllowNoIcons=yes
-WizardSmallImageFile="@ISS_SOURCE_DIR@/cmake/setup-image.bmp"
-WizardImageFile="@ISS_SOURCE_DIR@/cmake/setup-banner-328x604.bmp"
 SetupIconFile="@ISS_SOURCE_DIR@/cmake/own3d-exe.ico"
 LicenseFile="@ISS_SOURCE_DIR@/cmake/installer-license.rtf"
+DefaultDirName={code:GetDirName}
+DefaultGroupName={#MyAppName}
 OutputDir="@ISS_PACKAGE_DIR@"
 OutputBaseFilename=@CMAKE_PACKAGE_NAME@-@_PACKAGE_SUFFIX_OVERRIDE@
 VersionInfoVersion={#MyAppVersion}
 VersionInfoCompany={#MyAppPublisher}
 VersionInfoDescription={#MyAppName} Setup
+
 ; Compression
 Compression=lzma2/ultra64
 SolidCompression=yes
 LZMAAlgorithm=1
+
 ; Wizard Information
 WizardStyle=modern
 WizardResizable=yes
+WizardSmallImageFile="@ISS_SOURCE_DIR@/cmake/setup-image.bmp"
+WizardImageFile="@ISS_SOURCE_DIR@/cmake/setup-banner-328x604.bmp"
 
 [Languages]
 Name: "english"; MessagesFile: "compiler:Default.isl"
@@ -57,7 +65,7 @@ var
 begin
   // initialize default path, which will be returned when the following registry
   // key queries fail due to missing keys or for some different reason
-  Result := '{pf}\obs-studio';
+  Result := ExpandConstant('{pf}\obs-studio');
   // query the first registry value; if this succeeds, return the obtained value
   if RegQueryStringValue(HKLM32, 'SOFTWARE\OBS Studio', '', InstallPath) then
     Result := InstallPath
