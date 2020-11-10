@@ -16,10 +16,8 @@
 
 #include "curl.hpp"
 #include <sstream>
-#include "plugin.hpp"
 
-int32_t own3d::util::curl::debug_helper(CURL* handle, curl_infotype type, char* data, size_t size,
-										own3d::util::curl* self)
+int32_t own3d::util::curl::debug_helper(CURL* handle, curl_infotype type, char* data, size_t size, util::curl* self)
 {
 	if (self->_debug_callback) {
 		self->_debug_callback(handle, type, data, size);
@@ -63,7 +61,7 @@ int32_t own3d::util::curl::debug_helper(CURL* handle, curl_infotype type, char* 
 	return 0;
 }
 
-size_t own3d::util::curl::read_helper(void* ptr, size_t size, size_t count, own3d::util::curl* self)
+size_t own3d::util::curl::read_helper(void* ptr, size_t size, size_t count, util::curl* self)
 {
 	if (self->_read_callback) {
 		return self->_read_callback(ptr, size, count);
@@ -72,7 +70,7 @@ size_t own3d::util::curl::read_helper(void* ptr, size_t size, size_t count, own3
 	}
 }
 
-size_t own3d::util::curl::write_helper(void* ptr, size_t size, size_t count, own3d::util::curl* self)
+size_t own3d::util::curl::write_helper(void* ptr, size_t size, size_t count, util::curl* self)
 {
 	if (self->_write_callback) {
 		return self->_write_callback(ptr, size, count);
@@ -81,11 +79,11 @@ size_t own3d::util::curl::write_helper(void* ptr, size_t size, size_t count, own
 	}
 }
 
-int32_t own3d::util::curl::xferinfo_callback(own3d::util::curl* self, curl_off_t dlt, curl_off_t dln, curl_off_t ult,
-											 curl_off_t uln)
+int32_t own3d::util::curl::xferinfo_callback(util::curl* self, curl_off_t dlt, curl_off_t dln, curl_off_t ult, curl_off_t uln)
 {
 	if (self->_xferinfo_callback) {
-		return self->_xferinfo_callback(dlt, dln, ult, uln);
+		return self->_xferinfo_callback(static_cast<uint64_t>(dlt), static_cast<uint64_t>(dln),
+										static_cast<uint64_t>(ult), static_cast<uint64_t>(uln));
 	} else {
 		return 0;
 	}
