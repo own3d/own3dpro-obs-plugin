@@ -80,11 +80,12 @@ static int cpuid_max()
 {
 	union {
 		int info[4];
+		unsigned int unfo[4];
 	} data = {static_cast<int>(0x80000000), 0, 0, 0};
 #ifdef _MSC_VER
 	__cpuidex(data.info, data.info[0], 0);
 #else
-	__get_cpuid(data.info[0], &data.info[0], &data.info[1], &data.info[2], &data.info[4]);
+	__get_cpuid(data.info[0], &data.unfo[0], &data.unfo[1], &data.unfo[2], &data.unfo[4]);
 #endif
 	return data.info[0];
 }
@@ -93,6 +94,7 @@ const std::string own3d::util::systeminfo::cpu_manufacturer()
 {
 	union {
 		int info[4];
+		unsigned int unfo[4];
 		struct {
 			uint32_t   _eax;
 			const char str1[4];
@@ -103,7 +105,7 @@ const std::string own3d::util::systeminfo::cpu_manufacturer()
 #ifdef _MSC_VER
 	__cpuidex(data.info, data.info[0], 0);
 #else
-	__get_cpuid(data.info[0], &data.info[0], &data.info[1], &data.info[2], &data.info[4]);
+	__get_cpuid(data.info[0], &data.unfo[0], &data.unfo[1], &data.unfo[2], &data.unfo[4]);
 #endif
 	std::vector<char> ids(4 * 4);
 	snprintf(ids.data(), ids.size(), "%4.4s%4.4s%4.4s", data.str1, data.str2, data.str3);
@@ -139,8 +141,9 @@ const std::string own3d::util::systeminfo::cpu_name()
 	}
 
 	union res {
-		int        info[4] = {0, 0, 0, 0};
-		const char str[16];
+		int          info[4] = {0, 0, 0, 0};
+		unsigned int unfo[4];
+		const char   str[16];
 	};
 
 	res data1 = {static_cast<int>(0x80000002), 0, 0, 0};
@@ -152,9 +155,9 @@ const std::string own3d::util::systeminfo::cpu_name()
 	__cpuidex(data2.info, data2.info[0], 0);
 	__cpuidex(data3.info, data3.info[0], 0);
 #else
-	__get_cpuid(data1.info[0], &data1.info[0], &data1.info[1], &data1.info[2], &data1.info[4]);
-	__get_cpuid(data2.info[0], &data2.info[0], &data2.info[1], &data2.info[2], &data2.info[4]);
-	__get_cpuid(data3.info[0], &data3.info[0], &data3.info[1], &data3.info[2], &data3.info[4]);
+	__get_cpuid(data1.info[0], &data1.unfo[0], &data1.unfo[1], &data1.unfo[2], &data1.unfo[4]);
+	__get_cpuid(data2.info[0], &data2.unfo[0], &data2.unfo[1], &data2.unfo[2], &data2.unfo[4]);
+	__get_cpuid(data3.info[0], &data3.unfo[0], &data3.unfo[1], &data3.unfo[2], &data3.unfo[4]);
 #endif
 
 	std::vector<char> name;
