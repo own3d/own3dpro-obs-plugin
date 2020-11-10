@@ -1,16 +1,16 @@
 // Integration of the OWN3D service into OBS Studio
 // Copyright (C) 2020 own3d media GmbH <support@own3d.tv>
-// 
+//
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
-// 
+//
 // This program is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 // GNU General Public License for more details.
-// 
+//
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
@@ -79,7 +79,8 @@ size_t own3d::util::curl::write_helper(void* ptr, size_t size, size_t count, uti
 	}
 }
 
-int32_t own3d::util::curl::xferinfo_callback(util::curl* self, curl_off_t dlt, curl_off_t dln, curl_off_t ult, curl_off_t uln)
+int32_t own3d::util::curl::xferinfo_callback(util::curl* self, curl_off_t dlt, curl_off_t dln, curl_off_t ult,
+											 curl_off_t uln)
 {
 	if (self->_xferinfo_callback) {
 		return self->_xferinfo_callback(static_cast<uint64_t>(dlt), static_cast<uint64_t>(dln),
