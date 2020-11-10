@@ -15,10 +15,12 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 #include "ui-download.hpp"
+#include <chrono>
 #include <cmath>
 #include <limits>
 #include <set>
 #include <sstream>
+#include <thread>
 #include "json/json.hpp"
 #include "plugin.hpp"
 
