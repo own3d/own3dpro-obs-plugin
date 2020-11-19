@@ -66,3 +66,92 @@ jobs:
       with:
         name: ${{ matrix.id }}
         path: build/package
+  ubuntu:
+    name: "Ubuntu 64-bit"
+    strategy:
+      fail-fast: true
+      matrix:
+        ubuntu: [ bionic, focal ]
+        compiler: [ gcc, clang ]
+        include:
+          - ubuntu: bionic
+            compiler: gcc
+            compiler-cxx: g++
+            runner: ubuntu-18.04
+            packages: gcc-8 g++8
+            extra_command: sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-8 800 --slave /usr/bin/g++ g++ /usr/bin/g++-8
+            id: ubuntu-18.04
+          - ubuntu: bionic
+            compiler: clang
+            compiler-cxx: clang++
+            compiler-version: 8
+            runner: ubuntu-18.04
+            packages: clang-8 clang-format-8 clang-tidy-8
+            extra_command: ""
+            id: ubuntu-18.04-clang
+          - ubuntu: focal
+            compiler: gcc
+            compiler-cxx: g++
+            runner: ubuntu-20.04
+            packages: gcc-9 g++9
+            extra_command: sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-9 800 --slave /usr/bin/g++ g++ /usr/bin/g++-9
+            id: ubuntu-20.04
+          - ubuntu: focal
+            compiler: clang
+            compiler-cxx: clang++
+            compiler-version: 9
+            runner: ubuntu-20.04
+            packages: clang-9 clang-format-9 clang-tidy-9
+            extra_command: ""
+            id: ubuntu-20.04-clang
+    runs-on: ${{ matrix.runner }}
+    env:
+      CMAKE_GENERATOR: "Ninja"
+      CC: ${{ matrix.compiler }}
+      CXX: ${{ matrix.compiler-cxx }}
+    steps:
+    - name: "Clone Repository"
+      uses: actions/checkout@v1
+    - name: "Prerequisites: Submodules"
+      shell: bash
+      run: git submodule update --init --recursive
+    - name: "Prerequisites: Apt-Get"
+      shell: bash
+      run: |
+        sudo apt-get -qq update
+        sudo apt-get purge libjpeg9-dev:amd64 libjpeg8-dev:amd64 libjpeg-turbo8-dev:amd64
+        sudo apt-get install \
+          build-essential \
+          cmake \
+          ninja-build \
+          git \
+          qt5-default libqwt-qt5-dev libqt5svg5-dev \
+          libavcodec-dev libavdevice-dev libavfilter-dev libavformat-dev libavutil-dev libswresample-dev libswscale-dev \
+          libcurl4-openssl-dev \
+          ${{ matrix.packages }} \
+          checkinstall pkg-config
+        ${{ matrix.extra_command }}
+    - name: "Cache: OBS"
+      uses: actions/cache@v2
+      with:
+        path: "build/temp/libobs-download/libobs-download-prefix/src/libobs.7z"
+        key: ${{ matrix.id }}-${{ env.DOWNLOAD_OBS_VERSION }}-${{ env.DOWNLOAD_OBS_HASH_64 }}
+    - name: "Configure Project"
+      shell: bash
+      run: |
+        cmake -H. -B"build/temp" -DCMAKE_INSTALL_PREFIX="build/distrib" -DCMAKE_PACKAGE_NAME="own3d-pro" -DCMAKE_PACKAGE_PREFIX="build/package" -DOBS_DOWNLOAD=ON
+    - name: "Build Project"
+      shell: bash
+      run: |
+        cmake --build "build/temp" --config RelWithDebInfo --target install
+    - name: "Package Project"
+      shell: bash
+      run: |
+        mkdir build/package
+        cmake --build "build/temp" --config RelWithDebInfo --target PACKAGE_7Z
+        cmake --build "build/temp" --config RelWithDebInfo --target PACKAGE_ZIP
+    - name: "Upload Artifacts"
+      uses: actions/upload-artifact@v1
+      with:
+        name: ${{ matrix.id }}
+        path: build/package
