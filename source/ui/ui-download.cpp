@@ -379,7 +379,7 @@ own3d::ui::installer::installer(const QUrl& url, const QString& name, const QStr
 	{ // Generate a theme extraction path
 		{
 			char* buf   = obs_module_config_path("themes");
-			_theme_path = buf;
+			_theme_path = std::filesystem::u8path(buf);
 			bfree(buf);
 		}
 		_theme_path.append(_theme_name.toStdString());
