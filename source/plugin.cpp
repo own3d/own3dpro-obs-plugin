@@ -88,7 +88,7 @@ own3d::configuration::configuration()
 	{
 		const char* path = obs_module_config_path("config.json");
 		if (path) {
-			_data_path = path;
+			_data_path = std::filesystem::u8path(path);
 		} else {
 			throw std::runtime_error("Plugin has no configuration directory, libobs broke.");
 		}
