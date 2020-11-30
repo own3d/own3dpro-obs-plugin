@@ -312,12 +312,12 @@ void own3d::ui::installer_thread::run_install()
 			throw std::runtime_error("Unable to install, missing data.json file.");
 		}
 
-		data.reset(obs_data_create_from_json_file(data_path.string().c_str()), own3d::data_deleter);
+		data.reset(obs_data_create_from_json_file(data_path.u8string().c_str()), own3d::data_deleter);
 		if (!data) {
 			throw std::runtime_error("Failed to install theme, data.json may be corrupted.");
 		}
 
-		adjust_collection(data, name, std::filesystem::absolute(_out_path).string());
+		adjust_collection(data, name, std::filesystem::absolute(_out_path).u8string());
 	}
 
 	// Step 3: Store current scene collection, and create new temporary one.
@@ -329,7 +329,7 @@ void own3d::ui::installer_thread::run_install()
 	}
 
 	// Step 4: Save JSON as new file.
-	if (!obs_data_save_json_safe(data.get(), file_path.string().c_str(), ".tmp", ".bk")) {
+	if (!obs_data_save_json_safe(data.get(), file_path.u8string().c_str(), ".tmp", ".bk")) {
 		throw std::runtime_error("Failed to install theme, unable to write output file.");
 	}
 
