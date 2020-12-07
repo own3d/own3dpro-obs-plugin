@@ -20,7 +20,7 @@ cmake_minimum_required(VERSION 3.12.0)
 # Automatic Versioning
 set(VERSION_MAJOR 1)
 set(VERSION_MINOR 4)
-set(VERSION_PATCH 5)
+set(VERSION_PATCH 6)
 set(VERSION_TWEAK 0)
 set(VERSION_SUFFIX "")
 if(EXISTS "${CMAKE_CURRENT_LIST_DIR}/.git")
