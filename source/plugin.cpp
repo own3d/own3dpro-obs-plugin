@@ -190,7 +190,7 @@ std::string own3d::get_api_endpoint(std::string_view const args)
 std::string own3d::get_web_endpoint(std::string_view const args /*= ""*/)
 {
 	constexpr std::string_view URL_ENDPOINT         = "https://own3d.pro/";
-	constexpr std::string_view URL_ENDPOINT_SANDBOX = "https://sandbox.obs.own3d.tv/";
+	constexpr std::string_view URL_ENDPOINT_SANDBOX = "https://sandbox.own3d.pro/";
 
 	std::vector<char> buffer(65535);
 	if (is_sandbox()) {
