@@ -17,176 +17,480 @@
 # CMake Setup
 cmake_minimum_required(VERSION 3.12.0)
 
-# Automatic Versioning
+################################################################################
+# Configure Type
+################################################################################
+
+# Detect if we are building by ourselves or as part of something else.
+if("${CMAKE_SOURCE_DIR}" STREQUAL "${CMAKE_CURRENT_LIST_DIR}")
+	set(GROUPED OFF)
+	set(PREFIX "")
+else()
+	set(GROUPED ON)
+	set(PREFIX "OWN3D_")
+endif()
+set(LOGPREFIX "OWN3D:")
+
+################################################################################
+# Versioning
+################################################################################
+
 set(VERSION_MAJOR 1)
-set(VERSION_MINOR 4)
-set(VERSION_PATCH 7)
+set(VERSION_MINOR 5)
+set(VERSION_PATCH 0)
 set(VERSION_TWEAK 0)
 set(VERSION_SUFFIX "")
+set(VERSION_COMMIT "00000000")
+
+# Check if we are in a git repository.
 if(EXISTS "${CMAKE_CURRENT_LIST_DIR}/.git")
-	set(GIT_RESULT "")
-	set(GIT_OUTPUT "")
-	execute_process(
-		COMMAND git rev-list --count --topo-order ${VERSION_MAJOR}.${VERSION_MINOR}.${VERSION_PATCH}${VERSION_SUFFIX}..HEAD
-		WORKING_DIRECTORY ${CMAKE_CURRENT_LIST_DIR}
-		RESULT_VARIABLE GIT_RESULT
-		OUTPUT_VARIABLE GIT_OUTPUT
-		OUTPUT_STRIP_TRAILING_WHITESPACE ERROR_STRIP_TRAILING_WHITESPACE ERROR_QUIET
+	# Try and figure out where git is.
+	find_program(GIT git
+		PATHS
+			/bin
+			/sbin
+			/usr/bin
+			/usr/local/bin
 	)
-	if(GIT_RESULT EQUAL 0)
-		set(VERSION_TWEAK ${GIT_OUTPUT})
-	endif()
-	execute_process(
-		COMMAND git rev-parse --short=8 HEAD
-		WORKING_DIRECTORY ${CMAKE_CURRENT_LIST_DIR}
-		RESULT_VARIABLE GIT_RESULT
-		OUTPUT_VARIABLE GIT_OUTPUT
-		OUTPUT_STRIP_TRAILING_WHITESPACE ERROR_STRIP_TRAILING_WHITESPACE ERROR_QUIET
-	)
-	if(GIT_RESULT EQUAL 0)
-		set(PROJECT_COMMIT ${GIT_OUTPUT})
+
+	if(GIT)
+		set(GIT_RESULT)
+		set(GIT_OUTPUT)
+		set(GIT_ERROR)
+
+		execute_process(
+			COMMAND "${GIT}" describe --tags --long --match "[0-9]*.[0-9]*.[0-9]*" --abbrev=8 HEAD
+			WORKING_DIRECTORY ${CMAKE_CURRENT_LIST_DIR}
+			RESULT_VARIABLE GIT_RESULT
+			OUTPUT_VARIABLE GIT_OUTPUT
+			ERROR_VARIABLE GIT_ERROR
+			OUTPUT_STRIP_TRAILING_WHITESPACE
+			ERROR_STRIP_TRAILING_WHITESPACE
+			ERROR_QUIET
+		)
+
+		if(GIT_RESULT EQUAL 0)
+			string(REPLACE "-" "." GIT_OUTPUT "${GIT_OUTPUT}")
+			string(REPLACE "." ";" GIT_OUTPUT "${GIT_OUTPUT}")
+
+			# Parse Version
+			list(GET GIT_OUTPUT 0 VERSION_MAJOR)
+			list(GET GIT_OUTPUT 1 VERSION_MINOR)
+			list(GET GIT_OUTPUT 2 VERSION_PATCH)
+			list(GET GIT_OUTPUT 3 VERSION_BUILD)
+			list(GET GIT_OUTPUT 4 VERSION_COMMIT)
+
+			# Patch needs additional parsing.
+			# This may be a [0-9]*[a-z]*[0-9]+ string.
+			string(REGEX MATCHALL "^([0-9]+)([a-z]+[0-9]+)?" T_MATCHES "${VERSION_PATCH}")
+			set(VERSION_PATCH "${CMAKE_MATCH_1}")
+			if(CMAKE_MATCH_2)
+				set(VERSION_SUFFIX "${CMAKE_MATCH_2}")
+			endif()
+		else()
+			message(WARNING "${LOGPREFIX} Failed to detect version, using default instead.")
+		endif()
 	endif()
 endif()
-if(PROJECT_COMMIT)
-	set(VERSION_STRING "${VERSION_MAJOR}.${VERSION_MINOR}.${VERSION_PATCH}.${VERSION_TWEAK}${VERSION_SUFFIX}-${PROJECT_COMMIT}")
+
+# Allow manual overrides of the detected version.
+set(${PREFIX}VERSION "" CACHE STRING "Override OWN3D.Pro version with this string. Format: Major.Minor.Patch[Suffix][-Tweak[-Commit8c]]")
+if(${PREFIX}VERSION)
+	string(REPLACE "-" "." T_VERSION "${${PREFIX}VERSION}")
+	string(REPLACE "." ";" T_VERSION "${${PREFIX}VERSION}")
+
+	list(LENGTH T_VERSION T_VERSIONLEN)
+	list(GET T_VERSION 0 VERSION_MAJOR)
+	list(GET T_VERSION 1 VERSION_MINOR)
+	list(GET T_VERSION 2 VERSION_PATCH)
+	if (T_VERSIONLEN GREATER_EQUAL 3)
+		list(GET T_VERSION 3 VERSION_BUILD)
+	else()
+		set(VERSION_BUILD 0)
+	endif()
+	if (T_VERSIONLEN GREATER_EQUAL 4)
+		list(GET T_VERSION 4 VERSION_COMMIT)
+	else()
+#		set(VERSION_COMMIT "00000000")
+	endif()
+
+	# Patch needs additional parsing.
+	# This may be a [0-9]*[a-z]*[0-9]+ string.
+	string(REGEX MATCHALL "([0-9]+)([a-z0-9]+)" T_MATCHES "${VERSION_PATCH}")
+	set(VERSION_PATCH "${CMAKE_MATCH_1}")
+	if(CMAKE_MATCH_2)
+		set(VERSION_SUFFIX "${CMAKE_MATCH_2}")
+	else()
+		set(VERSION_SUFFIX "")
+	endif()
+endif()
+
+# Generate Version String
+if(VERSION_COMMIT)
+	set(VERSION_STRING "${VERSION_MAJOR}.${VERSION_MINOR}.${VERSION_PATCH}.${VERSION_TWEAK}${VERSION_SUFFIX}-${VERSION_COMMIT}")
 else()
 	set(VERSION_STRING "${VERSION_MAJOR}.${VERSION_MINOR}.${VERSION_PATCH}.${VERSION_TWEAK}${VERSION_SUFFIX}")
 endif()
 
-# Define Project
+# Log the detected version.
+message(STATUS "${LOGPREFIX} Version ${VERSION_STRING}")
+
+################################################################################
+# Project
+################################################################################
 project(
 	own3d
 	VERSION ${VERSION_MAJOR}.${VERSION_MINOR}.${VERSION_PATCH}.${VERSION_TWEAK}
+	HOMEPAGE_URL "https://own3d.pro/"
 )
+
+# Full Project Name
 set(PROJECT_FULL_NAME "OWN3D for OBS Studio")
+
+# Description
 set(PROJECT_DESCRIPTION "")
+
+# Authors (TODO: Generate this from AUTHORS)
 set(PROJECT_AUTHORS "")
+
+# Copyright Years (TODO: Update every year)
 set(PROJECT_COPYRIGHT_YEARS "2020")
 
+# Versioning
+set(PROJECT_VERSION_STRING ${VERSION_STRING})
+
 ################################################################################
-# Setup / Bootstrap
+# Modules
 ################################################################################
 
 # Search Path
-set(CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake/clang" "${CMAKE_CURRENT_SOURCE_DIR}/cmake/modules" "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
+set(CMAKE_MODULE_PATH 
+	"${CMAKE_CURRENT_SOURCE_DIR}/cmake/clang" 
+	"${CMAKE_CURRENT_SOURCE_DIR}/cmake/modules" 
+	"${CMAKE_CURRENT_SOURCE_DIR}/cmake"
+)
 
-# CMake Modules
+# Include
 include("util")
 if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/cmake/Clang/Clang.cmake")
 	include("Clang")
 	set(HAVE_CLANG ON)
 endif()
 
-# Detect Build Type
-if("${CMAKE_SOURCE_DIR}" STREQUAL "${PROJECT_SOURCE_DIR}")
-	set(PropertyPrefix "")
+################################################################################
+# Platform Setup
+################################################################################
+
+# Operating System
+if(CMAKE_SYSTEM_NAME STREQUAL "Windows")
+	set(D_PLATFORM_OS "windows")
+	set(D_PLATFORM_WINDOWS 1)
+elseif(CMAKE_SYSTEM_NAME STREQUAL "Linux")
+	set(D_PLATFORM_OS "linux")
+	set(D_PLATFORM_LINUX 1)
+elseif(CMAKE_SYSTEM_NAME STREQUAL "Darwin")
+	set(D_PLATFORM_OS "macos")
+	set(D_PLATFORM_MAC 1)
 else()
-	set(PropertyPrefix "${PROJECT_NAME}_")
+	set(D_PLATFORM_OS "unknown")
+	set(D_PLATFORM_UNKNOWN 1)
+	message(WARNING "${LOGPREFIX} The operating system '${CMAKE_SYSTEM_NAME}' is unknown to to this script, continue at your own risk.")
 endif()
 
-# Detect Architecture
-math(EXPR BITS "8*${CMAKE_SIZEOF_VOID_P}")
-if("${BITS}" STREQUAL "32")
-	set(ARCH "x86")
-	message(STATUS "StreamFX no longer supports 32-bit builds, you are on your own if you continue.")
+# Pointer Size (bits)
+math(EXPR D_PLATFORM_BITS_PTR "8*${CMAKE_SIZEOF_VOID_P}")
+
+set(ARCH_INSTR_32 "i386;i686;x86;arm;ARM")
+set(ARCH_INSTR_64 "x86_64;AMD64;IA64;arm64;ARM64")
+set(ARCH_INSTR_X86 "i386;i686;x86;x86_64;AMD64")
+set(ARCH_INSTR_ARM "arm;ARM;arm64;ARM64")
+set(ARCH_INSTR_ITANIUM "IA64")
+
+# Bitness
+list(FIND ARCH_INSTR_32 "${CMAKE_SYSTEM_PROCESSOR}" FOUND)
+if(FOUND GREATER -1)
+	set(D_PLATFORM_BITS 32)
+endif()
+
+list(FIND ARCH_INSTR_64 "${CMAKE_SYSTEM_PROCESSOR}" FOUND)
+if(FOUND GREATER -1)
+	set(D_PLATFORM_BITS 64)
+endif()
+
+# Basic Instruction Set
+list(FIND ARCH_INSTR_X86 "${CMAKE_SYSTEM_PROCESSOR}" FOUND)
+if(FOUND GREATER -1)
+	set(D_PLATFORM_ARCH "x86")
+	set(D_PLATFORM_ARCH_X86 1)
+endif()
+
+list(FIND ARCH_INSTR_ARM "${CMAKE_SYSTEM_PROCESSOR}" FOUND)
+if(FOUND GREATER -1)
+	set(D_PLATFORM_ARCH "ARM")
+	set(D_PLATFORM_ARCH_ARM 1)
+endif()
+
+list(FIND ARCH_INSTR_ITANIUM "${CMAKE_SYSTEM_PROCESSOR}" FOUND)
+if(FOUND GREATER -1)
+	set(D_PLATFORM_ARCH "Itanium")
+	set(D_PLATFORM_ARCH_ITANIUM 1)
+endif()
+
+################################################################################
+# Detect if we are building with OBS Studio (different from Grouped builds)
+################################################################################
+
+set(STANDALONE ON)
+if(GROUPED AND (TARGET libobs))
+	set(STANDALONE OFF)
+endif()
+if(STANDALONE)
+	message(STATUS "${LOGPREFIX} This is a standalone build, please make sure you've followed the instructions.")
+	include("DownloadProject")
+	set(${PREFIX}OBS_NATIVE OFF)
 else()
-	set(ARCH "x64")
+	message(STATUS "${LOGPREFIX} This is a combined build.")
+	set(${PREFIX}OBS_NATIVE ON)
+	if (NOT TARGET obs-frontend-api)
+		message(FATAL_ERROR "${LOGPREFIX} This project does not support non-UI builds.")
+		return()
+	endif()
 endif()
-
-# Apply compiler specific changes.
-if(CMAKE_CXX_COMPILER_ID STREQUAL "MSVC" OR (WIN32 AND CMAKE_CXX_COMPILER_ID STREQUAL "Clang"))
-	message(STATUS "Applying custom flags for MSVC style build.")
-
-	# MSVC/ClangCL
-	# - Statically link Microsoft C/C++ Redistributable.
-	# - Enable /W3 and disable useless warnings.
-	# - Enable C++ exceptions with SEH exceptions.
-	# - Enable multi-processor compiling.
-
-	# Enable most useful warnings.
-	set(DISABLED_WARNINGS 
-		"/wd4061" "/wd4100" "/wd4180" "/wd4201" "/wd4464" "/wd4505" "/wd4514"
-		"/wd4571" "/wd4623" "/wd4625" "/wd4626" "/wd4668" "/wd4710" "/wd4774"
-		"/wd4820" "/wd5026" "/wd5027" "/wd5039" "/wd5045" "/wd26812"
-	)
-	add_compile_options("/W3")
-	foreach(WARN ${DISABLED_WARNINGS})
-		add_compile_options("${WARN}")
-	endforeach()
-
-	# Build with static MSVC linkage.
-    add_compile_options(
-        $<$<CONFIG:>:/MT>
-        $<$<CONFIG:Debug>:/MTd>
-        $<$<CONFIG:Release>:/MT>
-        $<$<CONFIG:RelWithDebInfo>:/MT>
-        $<$<CONFIG:MinSizeRel>:/MT>
-    )
-
-	# C++ Exceptions & SEH
-	add_compile_options("/EHa")
-
-	# Multiprocessor compiling
-	add_compile_options("/MP")
-
-elseif(CMAKE_CXX_COMPILER_ID STREQUAL "Clang" OR CMAKE_CXX_COMPILER_ID STREQUAL "AppleClang" OR CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
-	message(STATUS "Applying custom flags for GNU style build.")
-	
-	# Clang/AppleClang/GNU
-	# - Don't export by default.
-	# - Enable all and extra warnings.
-	
-	add_compile_options("-Wall")
-	add_compile_options("-Wextra")
-	add_compile_options("-fvisibility=hidden")
-
-endif()
-
-# C++ Standard and Extensions
-## Use C++17 and no non-standard extensions.
-set(_CXX_STANDARD 17)
-set(_CXX_EXTENSIONS OFF)
 
 ################################################################################
 # Options
 ################################################################################
-set(${PropertyPrefix}OBS_NATIVE FALSE CACHE BOOL "Use native obs-studio build" FORCE)
-set(${PropertyPrefix}OBS_REFERENCE FALSE CACHE BOOL "Use referenced obs-studio build" FORCE)
-set(${PropertyPrefix}OBS_PACKAGE FALSE CACHE BOOL "Use packaged obs-studio build" FORCE)
-set(${PropertyPrefix}OBS_DOWNLOAD FALSE CACHE BOOL "Use downloaded obs-studio build")
-mark_as_advanced(FORCE OBS_NATIVE OBS_PACKAGE OBS_REFERENCE OBS_DOWNLOAD)
 
-# Solve OBS_NATIVE, OBS_REFERENCE, OBS_PACKAGE, OBS_DOWNLOAD
-if(TARGET libobs)
-	message(STATUS "${PROJECT_NAME}: Using native obs-studio.")
-	CacheSet(${PropertyPrefix}OBS_NATIVE TRUE)
-	if (TARGET obs-frontend-api)
-		set(HAVE_OBS_FRONTEND TRUE)
-	endif()
-else()
-	message(STATUS "${PROJECT_NAME}: Using packaged or remote obs-studio.")
-	CacheSet(${PropertyPrefix}OBS_NATIVE FALSE)
+set(${PREFIX}ENABLE_CLANG OFF CACHE BOOL "Enable Clang integration for supported compilers.")
 
-	set(CMAKE_PACKAGE_PREFIX "${CMAKE_BINARY_DIR}" CACHE PATH "Path for generated archives.")
-	set(CMAKE_PACKAGE_NAME "${PROJECT_NAME}" CACHE STRING "Name for the generated archives.")
-	set(CMAKE_PACKAGE_SUFFIX_OVERRIDE "" CACHE STRING "Override for the suffix.")
+################################################################################
+# Clang
+################################################################################
 
-	if(UNIX)
-		set(UNIX_LOCAL_STRUCTURE TRUE CACHE BOOL "Package for a local linux install.")
-	endif()
+if(${PREFIX}ENABLE_CLANG AND (EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/cmake/clang/Clang.cmake"))
+	include("Clang")
+	set(HAVE_CLANG ON)
+endif()
 
-	if(NOT ${PropertyPrefix}OBS_DOWNLOAD)
-		set(${PropertyPrefix}OBS_STUDIO_DIR "" CACHE PATH "OBS Studio Source/Package Directory")
-		set(${PropertyPrefix}OBS_DEPENDENCIES_DIR "" CACHE PATH "OBS Studio Dependencies Directory")
-		if(EXISTS "${OBS_STUDIO_DIR}/cmake/LibObs/LibObsConfig.cmake")
-			message(STATUS "${PROJECT_NAME}: Using packaged obs-studio.")
-			CacheSet(${PropertyPrefix}OBS_PACKAGE TRUE)
-		elseif(EXISTS "${OBS_STUDIO_DIR}/libobs/obs-module.h")
-			message(STATUS "${PROJECT_NAME}: Using referenced obs-studio.")
-			CacheSet(${PropertyPrefix}OBS_REFERENCE TRUE)
+################################################################################
+# Standalone Build: OBS Studio
+################################################################################
+
+if(STANDALONE)
+	# Options
+	set(${PREFIX}DOWNLOAD_OBS_URL "" CACHE STRING "(Optional) URL of prebuilt libOBS archive to download.")
+	set(${PREFIX}DOWNLOAD_OBS_HASH "" CACHE STRING "(Optional) The hash for the libOBS archive.")
+	mark_as_advanced(
+		${PREFIX}DOWNLOAD_OBS_URL
+		${PREFIX}DOWNLOAD_OBS_HASH
+	)
+
+	# Allow overriding what version we build against.
+	if(${PREFIX}DOWNLOAD_OBS_URL)
+		set(_DOWNLOAD_OBS_URL ${PREFIX}DOWNLOAD_OBS_URL)
+		set(_DOWNLOAD_OBS_HASH ${PREFIX}DOWNLOAD_OBS_HASH)
+	else()
+		set(_DOWNLOAD_OBS_VERSION "26.1.0-ci")
+		if (D_PLATFORM_WINDOWS)
+			if (D_PLATFORM_ARCH_X86)
+				set(_DOWNLOAD_OBS_URL "https://github.com/Xaymar/obs-studio/releases/download/${_DOWNLOAD_OBS_VERSION}/obs-studio-x64-0.0.0.0-windows-${D_PLATFORM_BITS}.7z")
+				if (D_PLATFORM_BITS EQUAL 64)
+					set(_DOWNLOAD_OBS_HASH "SHA256=EA9EE4CCEC0A19605C0768F1F4C21391A919CF0886F7A7CC94D63A95402CFD9B")
+				else()
+					message(FATAL_ERROR "${LOGPREFIX} Platform '${D_PLATFORM_OS}' with architecture '${D_PLATFORM_ARCH}' and bitness '${D_PLATFORM_BITS}' is not supported.")
+					return()
+				endif()
+			else()
+				message(FATAL_ERROR "${LOGPREFIX} Platform '${D_PLATFORM_OS}' with architecture '${D_PLATFORM_ARCH}' and bitness '${D_PLATFORM_BITS}' is not supported.")
+				return()
+			endif()
+		elseif(D_PLATFORM_LINUX)
+			if (D_PLATFORM_ARCH_X86)
+				set(_DOWNLOAD_OBS_URL "https://github.com/Xaymar/obs-studio/releases/download/${_DOWNLOAD_OBS_VERSION}/obs-studio-x64-0.0.0.0-ubuntu-${D_PLATFORM_BITS}.7z")
+				if (D_PLATFORM_BITS EQUAL 64)
+					set(_DOWNLOAD_OBS_HASH "SHA256=2B2793CDD0C3F5940924665022E31A76C10E34174073BF7B221325C11E764DF5")
+				else()
+					message(FATAL_ERROR "${LOGPREFIX} Platform '${D_PLATFORM_OS}' with architecture '${D_PLATFORM_ARCH}' and bitness '${D_PLATFORM_BITS}' is not supported.")
+					return()
+				endif()
+			else()
+				message(FATAL_ERROR "${LOGPREFIX} Platform '${D_PLATFORM_OS}' with architecture '${D_PLATFORM_ARCH}' and bitness '${D_PLATFORM_BITS}' is not supported.")
+				return()
+			endif()
+		elseif(D_PLATFORM_MAC)
+			if (D_PLATFORM_ARCH_X86)
+				set(_DOWNLOAD_OBS_URL "https://github.com/Xaymar/obs-studio/releases/download/${_DOWNLOAD_OBS_VERSION}/obs-studio-x64-0.0.0.0-macos-${D_PLATFORM_BITS}.7z")
+				if (D_PLATFORM_BITS EQUAL 64)
+					set(_DOWNLOAD_OBS_HASH "SHA256=34ABD3E574C62DA4E026E5DE271B93AB5151927E564F77264A59456F6ABCBDD0")
+				else()
+					message(FATAL_ERROR "${LOGPREFIX} Platform '${D_PLATFORM_OS}' with architecture '${D_PLATFORM_ARCH}' and bitness '${D_PLATFORM_BITS}' is not supported.")
+					return()
+				endif()
+			else()
+				message(FATAL_ERROR "${LOGPREFIX} Platform '${D_PLATFORM_OS}' with architecture '${D_PLATFORM_ARCH}' and bitness '${D_PLATFORM_BITS}' is not supported.")
+				return()
+			endif()
 		else()
-			message(WARNING "${PROJECT_NAME}: No OBS Studio detected. Automatically setting ${PropertyPrefix}OBS_DOWNLOAD...")
-			CacheSet(${PropertyPrefix}OBS_DOWNLOAD TRUE)
+			message(FATAL_ERROR "${LOGPREFIX} Platform '${D_PLATFORM_OS}' with architecture '${D_PLATFORM_ARCH}' and bitness '${D_PLATFORM_BITS}' is not supported.")
+			return()
+		endif()
+	endif()
+	
+	# Download libOBS
+	download_project(
+		PROJ libobs
+		URL "${_DOWNLOAD_OBS_URL}"
+		URL_HASH "${_DOWNLOAD_OBS_HASH}"
+		DOWNLOAD_NO_PROGRESS OFF
+		UPDATE_DISCONNECTED OFF
+	)
+
+	include("${libobs_SOURCE_DIR}/cmake/LibObs/LibObsConfig.cmake")
+	include("${libobs_SOURCE_DIR}/cmake/obs-frontend-api/obs-frontend-apiConfig.cmake")
+endif()
+
+################################################################################
+# Standalone Build: OBS Studio Dependencies
+################################################################################
+
+if(STANDALONE AND NOT D_PLATFORM_LINUX)
+	# Options
+	set(${PREFIX}DOWNLOAD_OBSDEPS_URL "" CACHE STRING "(Optional) URL of prebuilt libOBS archive to download.")
+	set(${PREFIX}DOWNLOAD_OBSDEPS_HASH "" CACHE STRING "(Optional) The hash for the libOBS archive.")
+	mark_as_advanced(
+		${PREFIX}DOWNLOAD_OBSDEPS_URL
+		${PREFIX}DOWNLOAD_OBSDEPS_HASH
+	)
+	
+	# Allow overriding what version we build against.
+	if(${PREFIX}DOWNLOAD_OBSDEPS_URL)
+		set(_DOWNLOAD_OBSDEPS_URL ${PREFIX}DOWNLOAD_OBSDEPS_URL)
+		set(_DOWNLOAD_OBSDEPS_HASH ${PREFIX}DOWNLOAD_OBSDEPS_HASH)
+	else()
+		if (D_PLATFORM_WINDOWS)
+			if (D_PLATFORM_ARCH_X86)
+				set(_DOWNLOAD_OBSDEPS_URL "https://github.com/Xaymar/obs-studio/releases/download/26.1.0/dependencies_windows.7z")
+				if (D_PLATFORM_BITS EQUAL 64)
+					set(_DOWNLOAD_OBSDEPS_HASH "SHA256=F5F8F5A53FDB26FF8F4D24811CA0FEA891B3A0C8477515B886129669A81D37C2")
+				elseif (D_PLATFORM_BITS EQUAL 32)
+					set(_DOWNLOAD_OBSDEPS_HASH "SHA256=F5F8F5A53FDB26FF8F4D24811CA0FEA891B3A0C8477515B886129669A81D37C2")
+				else()
+					message(FATAL_ERROR "${LOGPREFIX} Platform '${D_PLATFORM_OS}' with architecture '${D_PLATFORM_ARCH}' and bitness '${D_PLATFORM_BITS}' is not supported.")
+					return()
+				endif()
+			else()
+				message(FATAL_ERROR "${LOGPREFIX} Platform '${D_PLATFORM_OS}' with architecture '${D_PLATFORM_ARCH}' and bitness '${D_PLATFORM_BITS}' is not supported.")
+				return()
+			endif()
+		elseif(D_PLATFORM_MAC)
+			if (D_PLATFORM_ARCH_X86)
+				set(_DOWNLOAD_OBSDEPS_URL "https://github.com/obsproject/obs-deps/releases/download/2020-12-22/macos-deps-2020-12-22.tar.gz")
+				if (D_PLATFORM_BITS EQUAL 64)
+					set(_DOWNLOAD_OBSDEPS_HASH "SHA256=B316DD7802E0DEAE2BD43F52D4C8BD52EF893D203B90148C2AB851A00AA733FF")
+				else()
+					message(FATAL_ERROR "${LOGPREFIX} Platform '${D_PLATFORM_OS}' with architecture '${D_PLATFORM_ARCH}' and bitness '${D_PLATFORM_BITS}' is not supported.")
+					return()
+				endif()
+			else()
+				message(FATAL_ERROR "${LOGPREFIX} Platform '${D_PLATFORM_OS}' with architecture '${D_PLATFORM_ARCH}' and bitness '${D_PLATFORM_BITS}' is not supported.")
+				return()
+			endif()
+		else()
+			message(FATAL_ERROR "${LOGPREFIX} Platform '${D_PLATFORM_OS}' with architecture '${D_PLATFORM_ARCH}' and bitness '${D_PLATFORM_BITS}' is not supported.")
+			return()
+		endif()
+	endif()
+	
+	# Download libOBS
+	download_project(
+		PROJ obsdeps
+		URL "${_DOWNLOAD_OBSDEPS_URL}"
+		URL_HASH "${_DOWNLOAD_OBSDEPS_HASH}"
+		DOWNLOAD_NO_PROGRESS OFF
+		UPDATE_DISCONNECTED OFF
+	)
+
+	if (D_PLATFORM_WINDOWS)
+		set(_OBSDEPS_PATH "${obsdeps_SOURCE_DIR}/win${D_PLATFORM_BITS}")
+	elseif(D_PLATFORM_MAC)
+		set(_OBSDEPS_PATH "${obsdeps_SOURCE_DIR}/obsdeps")
+	endif()
+endif()
+
+################################################################################
+# Standalone Build: Qt v5.x
+################################################################################
+
+if(STANDALONE AND NOT D_PLATFORM_LINUX)
+	set(${PREFIX}DOWNLOAD_QT OFF CACHE BOOL "Download Qt?")
+
+	if(${PREFIX}DOWNLOAD_QT)
+		set(${PREFIX}DOWNLOAD_QT_URL "" CACHE STRING "")
+		set(${PREFIX}DOWNLOAD_QT_HASH "" CACHE STRING "")
+		mark_as_advanced(
+			${PREFIX}DOWNLOAD_QT_URL
+			${PREFIX}DOWNLOAD_QT_HASH
+		)
+	
+		# Allow overriding what version we build against.
+		if(${PREFIX}DOWNLOAD_QT_URL)
+			set(_DOWNLOAD_QT_URL ${PREFIX}DOWNLOAD_QT_URL)
+			set(_DOWNLOAD_QT_HASH ${PREFIX}DOWNLOAD_QT_HASH)
+		else()
+			if (D_PLATFORM_WINDOWS)
+				if (D_PLATFORM_ARCH_X86)
+					if (D_PLATFORM_BITS EQUAL 64)
+						set(_DOWNLOAD_QT_URL "https://github.com/Xaymar/obs-studio/releases/download/26.1.0/qt_5.15.2_windows_64.7z")
+						set(_DOWNLOAD_QT_HASH "SHA256=109B9C21EF165B0C46DFAA9AD23124F2070ED4D74207C4AFB308183CB8D43BDD")
+					elseif (D_PLATFORM_BITS EQUAL 32)
+						set(_DOWNLOAD_QT_URL "https://github.com/Xaymar/obs-studio/releases/download/26.1.0/qt_5.15.2_windows_32.7z")
+						set(_DOWNLOAD_QT_HASH "SHA256=372E4FBF2A15DD4FDA955A07334D8B8AC6802990148C9CB4E766C90205F8F570")
+					else()
+						message(FATAL_ERROR "${LOGPREFIX} Platform '${D_PLATFORM_OS}' with architecture '${D_PLATFORM_ARCH}' and bitness '${D_PLATFORM_BITS}' is not supported.")
+						return()
+					endif()
+				else()
+					message(FATAL_ERROR "${LOGPREFIX} Platform '${D_PLATFORM_OS}' with architecture '${D_PLATFORM_ARCH}' and bitness '${D_PLATFORM_BITS}' is not supported.")
+					return()
+				endif()
+			elseif(D_PLATFORM_MAC)
+				if (D_PLATFORM_ARCH_X86)
+					set(_DOWNLOAD_QT_URL "https://github.com/obsproject/obs-deps/releases/download/2020-12-22/macos-qt-5.15.2-2020-12-22.tar.gz")
+					if (D_PLATFORM_BITS EQUAL 64)
+						set(_DOWNLOAD_QT_HASH "SHA256=5BA0BC722F54391FE27508D6DB57EC63BDA22DAD890F5960145C731C1BB837ED")
+					else()
+						message(FATAL_ERROR "${LOGPREFIX} Platform '${D_PLATFORM_OS}' with architecture '${D_PLATFORM_ARCH}' and bitness '${D_PLATFORM_BITS}' is not supported.")
+						return()
+					endif()
+				else()
+					message(FATAL_ERROR "${LOGPREFIX} Platform '${D_PLATFORM_OS}' with architecture '${D_PLATFORM_ARCH}' and bitness '${D_PLATFORM_BITS}' is not supported.")
+					return()
+				endif()
+			else()
+				message(FATAL_ERROR "${LOGPREFIX} Platform '${D_PLATFORM_OS}' with architecture '${D_PLATFORM_ARCH}' and bitness '${D_PLATFORM_BITS}' is not supported.")
+				return()
+			endif()
+		endif()
+		
+		download_project(
+			PROJ qt
+			URL "${_DOWNLOAD_QT_URL}"
+			URL_HASH "${_DOWNLOAD_QT_HASH}"
+			DOWNLOAD_NO_PROGRESS OFF
+			UPDATE_DISCONNECTED OFF
+		)
+		
+		set(Qt5_DIR "${qt_SOURCE_DIR}" CACHE STRING "Path to Qt5")
+		if (D_PLATFORM_WINDOWS)
+			if (D_PLATFORM_ARCH_X86)
+				if (D_PLATFORM_BITS EQUAL 64)
+					CacheSet(Qt5_DIR "${qt_SOURCE_DIR}/lib/cmake/Qt5/")
+				elseif (D_PLATFORM_BITS EQUAL 32)
+					CacheSet(Qt5_DIR "${qt_SOURCE_DIR}/lib/cmake/Qt5/")
+				endif()
+			endif()
+		elseif(D_PLATFORM_MAC)
+			CacheSet(Qt5_DIR "${qt_SOURCE_DIR}/lib/cmake/Qt5/")
 		endif()
 	endif()
 endif()
@@ -241,107 +545,19 @@ if(WIN32)
 	)	
 endif()
 
-# Download OBS Studio and OBS Dependencies
-if(${PropertyPrefix}OBS_DOWNLOAD)
-	include("DownloadProject")
-	
-	set(OBS_DOWNLOAD_VERSION "25.0.3-fe-ci")
-	if(WIN32)
-		# Windows
-		set(OBS_DEPENDENCIES_VERSION "25.0.0")
-		set(OBS_QT_VERSION "5.10.1")
-
-		download_project(
-			PROJ libobs
-			URL https://github.com/Xaymar/obs-studio/releases/download/${OBS_DOWNLOAD_VERSION}/obs-studio-${ARCH}-0.0.0.0-vs2019.7z
-			UPDATE_DISCONNECTED 1
-		)
-
-		download_project(
-			PROJ obsdeps
-			URL https://cdn.xaymar.com/obs/dependencies_${OBS_DEPENDENCIES_VERSION}.7z
-			UPDATE_DISCONNECTED 1
-		)
-	elseif(UNIX)
-		# Unix, Linux
-		download_project(
-			PROJ libobs
-			URL https://github.com/Xaymar/obs-studio/releases/download/${OBS_DOWNLOAD_VERSION}/obs-studio-${ARCH}-0.0.0.0-ubuntu1804.7z
-			UPDATE_DISCONNECTED 1
-		)
-
-		# Dependencies must be installed like normal OBS Studio
-		message("Linux builds require your install the necessary development packages, take a look at the obs-studio build guide for them.")
-	else()
-		# Other OS
-		message(FATAL "Unable to download libOBS as this Operating System is not yet supported.")
-	endif()
-endif()
-
-# Load OBS Studio & Dependencies
-if(${PropertyPrefix}OBS_PACKAGE)
-	include("${OBS_STUDIO_DIR}/cmake/LibObs/LibObsConfig.cmake")
-	if (EXISTS "${OBS_STUDIO_DIR}/cmake/obs-frontend-api/obs-frontend-apiConfig.cmake")
-		include("${OBS_STUDIO_DIR}/cmake/obs-frontend-api/obs-frontend-apiConfig.cmake")
-		set(HAVE_OBS_FRONTEND TRUE)
-	endif()
-elseif(${PropertyPrefix}OBS_REFERENCE)
-	set(obsPath "${OBS_STUDIO_DIR}")
-	include("${OBS_STUDIO_DIR}/cmake/external/FindLibobs.cmake")
-elseif(${PropertyPrefix}OBS_DOWNLOAD)
-	set(_INCLUDE_PREFIX "")
-	if(WIN32)
-		set(_INCLUDE_PREFIX "${libobs_SOURCE_DIR}/cmake")
-	elseif(UNIX)
-		set(_INCLUDE_PREFIX "${libobs_SOURCE_DIR}/usr/local/lib/cmake")
-	else()
-	endif()
-	
-	include("${_INCLUDE_PREFIX}/LibObs/LibObsConfig.cmake")
-	if (EXISTS "${_INCLUDE_PREFIX}/obs-frontend-api/obs-frontend-apiConfig.cmake")
-		include("${_INCLUDE_PREFIX}/obs-frontend-api/obs-frontend-apiConfig.cmake")
-		
-		if(WIN32)
-			download_project(
-				PROJ qt
-				URL https://cdn.xaymar.com/obs/qt_${OBS_QT_VERSION}.7z
-				UPDATE_DISCONNECTED 1
-			)
-
-			set(Qt5_DIR "${qt_SOURCE_DIR}" CACHE STRING "Path to Qt5")
-			if("${BITS}" STREQUAL "32")
-				CacheSet(Qt5_DIR "${qt_SOURCE_DIR}/msvc2017/lib/cmake/Qt5/")
-			else()
-				CacheSet(Qt5_DIR "${qt_SOURCE_DIR}/msvc2017_64/lib/cmake/Qt5/")
-			endif()
-		endif()
-		set(HAVE_OBS_FRONTEND TRUE)
-	endif()
-	
-	set(libobs_INCLUDE_DIRS "${libobs_SOURCE_DIR}/include")
-endif()
-
 # QT5
-if(HAVE_OBS_FRONTEND)
-	find_package(Qt5 COMPONENTS Core Widgets REQUIRED)
-endif()
+find_package(Qt5 COMPONENTS Core Widgets REQUIRED)
 
 # CURL
 find_package(CURL QUIET)
 if(NOT CURL_FOUND)
-	if(${PropertyPrefix}OBS_NATIVE)
+	if(STANDALONE)
+		set(CURL_LIBRARIES "${_OBSDEPS_PATH}/bin/libcurl.lib")
+		set(CURL_INCLUDE_DIRS "${_OBSDEPS_PATH}/include")
+	else()
 		# Already defined by OBS
 		set(CURL_LIBRARIES "${CURL_LIB}")
 		set(CURL_INCLUDE_DIRS "${CURL_INCLUDE_DIR}")
-	elseif(${PropertyPrefix}OBS_REFERENCE)
-		set(CURL_LIBRARIES "${OBS_DEPENDENCIES_DIR}/bin/libcurl.lib")
-		set(CURL_INCLUDE_DIRS "${OBS_DEPENDENCIES_DIR}/include")
-	elseif(${PropertyPrefix}OBS_PACKAGE)
-		set(CURL_LIBRARIES "${OBS_DEPENDENCIES_DIR}/bin/libcurl.lib")
-		set(CURL_INCLUDE_DIRS "${OBS_DEPENDENCIES_DIR}/include")	
-	elseif(${PropertyPrefix}OBS_DOWNLOAD)
-		set(CURL_LIBRARIES "${obsdeps_SOURCE_DIR}/win${BITS}/bin/libcurl.lib")
-		set(CURL_INCLUDE_DIRS "${obsdeps_SOURCE_DIR}/win${BITS}/include")
 	endif()
 	CacheSet(CURL_LIBRARY_DEBUG ${CURL_LIBRARIES})
 	CacheSet(CURL_LIBRARY_RELEASE ${CURL_LIBRARIES})
@@ -349,33 +565,30 @@ if(NOT CURL_FOUND)
 	set(CURL_FOUND ON)
 endif()
 
-# ZLIB
-find_package(ZLIB QUIET)
-if(NOT ZLIB_FOUND)
-	if(${PropertyPrefix}OBS_NATIVE)
-		# Already defined by OBS
-		set(ZLIB_LIBRARIES "${ZLIB_LIB}")
-		set(ZLIB_INCLUDE_DIRS "${ZLIB_INCLUDE_DIR}")
-	elseif(${PropertyPrefix}OBS_REFERENCE)
-		set(ZLIB_LIBRARIES "${OBS_DEPENDENCIES_DIR}/bin/zlib.lib")
-		set(ZLIB_INCLUDE_DIRS "${OBS_DEPENDENCIES_DIR}/include")
-	elseif(${PropertyPrefix}OBS_PACKAGE)
-		set(ZLIB_LIBRARIES "${OBS_DEPENDENCIES_DIR}/bin/zlib.lib")
-		set(ZLIB_INCLUDE_DIRS "${OBS_DEPENDENCIES_DIR}/include")	
-	elseif(${PropertyPrefix}OBS_DOWNLOAD)
-		set(ZLIB_LIBRARIES "${obsdeps_SOURCE_DIR}/win${BITS}/bin/zlib.lib")
-		set(ZLIB_INCLUDE_DIRS "${obsdeps_SOURCE_DIR}/win${BITS}/include")
-	endif()
-	CacheSet(ZLIB_LIBRARY_DEBUG ${ZLIB_LIBRARIES})
-	CacheSet(ZLIB_LIBRARY_RELEASE ${ZLIB_LIBRARIES})
-	CacheSet(ZLIB_INCLUDE_DIR ${ZLIB_INCLUDE_DIRS})
-	set(ZLIB_FOUND ON)
-endif()
+# zlib
+set(ZLIB_LIBRARY "" CACHE FILEPATH "Path to zlib/zlib.lib")
+set(ZLIB_INCLUDE "" CACHE PATH "Path to zlib/include")
+cmake_policy(PUSH)
+cmake_policy(VERSION 2.6...3.18)
+add_library(ZLIB::ZLIB STATIC IMPORTED)
+set_target_properties(ZLIB::ZLIB PROPERTIES
+  INTERFACE_INCLUDE_DIRECTORIES "${ZLIB_INCLUDE}"
+  INTERFACE_LINK_LIBRARIES "\$<LINK_ONLY:${ZLIB_LIBRARY}>"
+  IMPORTED_LINK_INTERFACE_LANGUAGES "C"
+  IMPORTED_LINK_INTERFACE_LANGUAGES_RELEASE "C"
+  IMPORTED_LINK_INTERFACE_LANGUAGES_RELWITHDEBINFO "C"
+  IMPORTED_LINK_INTERFACE_LANGUAGES_MINSIZEREL "C"
+  IMPORTED_LINK_INTERFACE_LANGUAGES_DEBUG "C"
+  IMPORTED_LOCATION "${ZLIB_LIBRARY}"
+  IMPORTED_LOCATION_RELEASE "${ZLIB_LIBRARY}"
+  IMPORTED_LOCATION_RELWITHDEBINFO "${ZLIB_LIBRARY}"
+  IMPORTED_LOCATION_MINSIZEREL "${ZLIB_LIBRARY}"
+  IMPORTED_LOCATION_DEBUG "${ZLIB_LIBRARY}"
+)
+cmake_policy(POP)
 
 # libzip
-set(LIBZIP_INCLUDE_DIRS "${PROJECT_SOURCE_DIR}/third-party/libzip/${BITS}/include")
-set(LIBZIP_LIBRARIES "${PROJECT_SOURCE_DIR}/third-party/libzip/${BITS}/lib/zip.lib")
-set(LIBZIP_BINARIES "${PROJECT_SOURCE_DIR}/third-party/libzip/${BITS}/bin/zip.dll")
+find_package(libzip REQUIRED)
 
 ################################################################################
 # Code
@@ -430,17 +643,16 @@ set(PROJECT_PRIVATE
 
 set(PROJECT_LIBRARIES
 	${CURL_LIBRARIES}
-	${LIBZIP_LIBRARIES}
+	libzip::zip
 )
 set(PROJECT_LIBRARIES_DELAYED )
 set(PROJECT_INCLUDE_DIRS
 	${CURL_INCLUDE_DIRS}
-	${LIBZIP_INCLUDE_DIRS}
 	${libobs_INCLUDE_DIRS}
 )
 set(PROJECT_DEFINES )
 
-if(WIN32)
+if(D_PLATFORM_WINDOWS)
 	list(APPEND PROJECT_LIBRARIES
 		 Advapi32
 	)
@@ -526,7 +738,7 @@ target_include_directories(${PROJECT_NAME}
 target_link_libraries(${PROJECT_NAME}
 	${PROJECT_LIBRARIES}
 )
-if(WIN32)
+if(D_PLATFORM_WINDOWS)
 	target_link_libraries(${PROJECT_NAME}
 		Delayimp.lib
 	)
@@ -549,20 +761,13 @@ target_compile_definitions(${PROJECT_NAME}
 set_target_properties(
 	${PROJECT_NAME}
 	PROPERTIES
-		CXX_STANDARD ${_CXX_STANDARD}
+		CXX_STANDARD 17
 		CXX_STANDARD_REQUIRED ON
-		CXX_EXTENSIONS ${_CXX_EXTENSIONS}
+		CXX_EXTENSIONS OFF
 )
 
 # File Version
-if(WIN32)
-	set_target_properties(
-		${PROJECT_NAME}
-		PROPERTIES
-		VERSION ${PROJECT_VERSION_MAJOR}.${PROJECT_VERSION_MINOR}.${PROJECT_VERSION_PATCH}.${PROJECT_VERSION_TWEAK}
-		SOVERSION ${PROJECT_VERSION_MAJOR}.${PROJECT_VERSION_MINOR}.${PROJECT_VERSION_PATCH}.${PROJECT_VERSION_TWEAK}
-	)
-else()
+if(NOT D_PLATFORM_MAC)
 	set_target_properties(
 		${PROJECT_NAME}
 		PROPERTIES
@@ -572,31 +777,121 @@ else()
 endif()
 
 # UI
-if(HAVE_OBS_FRONTEND)
-	target_link_libraries(${PROJECT_NAME}
-		obs-frontend-api
-		Qt5::Core
-		Qt5::Widgets
+target_link_libraries(${PROJECT_NAME}
+	obs-frontend-api
+	Qt5::Core
+	Qt5::Widgets
+)
+set_target_properties(
+	${PROJECT_NAME}
+	PROPERTIES
+	AUTOUIC TRUE
+	AUTOUIC_SEARCH_PATHS "${PROJECT_SOURCE_DIR};${PROJECT_SOURCE_DIR}/ui"
+	AUTOMOC TRUE
+	AUTORCC TRUE
+	AUTOGEN_BUILD_DIR "${PROJECT_BINARY_DIR}/source"
+	AUTOGEN_SOURCE_GROUP "Qt Files"
+)
+
+
+################################################################################
+# C/C++ Compiler Adjustments
+################################################################################
+if(CMAKE_CXX_COMPILER_ID STREQUAL "MSVC" OR (WIN32 AND CMAKE_CXX_COMPILER_ID STREQUAL "Clang"))
+	message(STATUS "${LOGPREFIX} Applying custom flags for MSVC style build.")
+
+	# MSVC/ClangCL
+	# - Dynamically link Microsoft C/C++ Redistributable.
+	# - Enable /W3 and disable useless warnings.
+	# - Enable C++ exceptions with SEH exceptions.
+	# - Enable multi-processor compiling.
+
+	# Build with dynamic MSVC linkage.
+    target_compile_options(${PROJECT_NAME} PRIVATE 
+        $<$<CONFIG:>:/MD>
+        $<$<CONFIG:Debug>:/MDd>
+        $<$<CONFIG:Release>:/MD>
+        $<$<CONFIG:RelWithDebInfo>:/MD>
+        $<$<CONFIG:MinSizeRel>:/MD>
+    )
+
+	# Enable most useful warnings.
+	set(DISABLED_WARNINGS 
+		"/wd4061" "/wd4100" "/wd4180" "/wd4201" "/wd4464" "/wd4505" "/wd4514"
+		"/wd4571" "/wd4623" "/wd4625" "/wd4626" "/wd4668" "/wd4710" "/wd4774"
+		"/wd4820" "/wd5026" "/wd5027" "/wd5039" "/wd5045" "/wd26812"
 	)
-	set_target_properties(
-		${PROJECT_NAME}
-		PROPERTIES
-		AUTOUIC TRUE
-		AUTOUIC_SEARCH_PATHS "${PROJECT_SOURCE_DIR};${PROJECT_SOURCE_DIR}/ui"
-		AUTOMOC TRUE
-		AUTORCC TRUE
-		AUTOGEN_BUILD_DIR "${PROJECT_BINARY_DIR}/source"
-		AUTOGEN_SOURCE_GROUP "Qt Files"
+    target_compile_options(${PROJECT_NAME} PRIVATE "/W3")
+	foreach(WARN ${DISABLED_WARNINGS})
+		target_compile_options(${PROJECT_NAME} PRIVATE "${WARN}")
+	endforeach()
+
+	# C++ Exceptions & SEH
+	target_compile_options(${PROJECT_NAME} PRIVATE "/EHa")
+
+	# Multiprocessor compiling
+	target_compile_options(${PROJECT_NAME} PRIVATE "/MP")
+elseif(CMAKE_CXX_COMPILER_ID STREQUAL "Clang" OR CMAKE_CXX_COMPILER_ID STREQUAL "AppleClang" OR CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+	message(STATUS "${LOGPREFIX} Applying custom flags for GNU style build.")
+	
+	# Clang/AppleClang/GNU
+	# - Don't export by default. (Temporarily disabled)
+	# - Enable all and extra warnings.
+	
+	target_compile_options(${PROJECT_NAME} PRIVATE 
+		"-Wall"
+		"-Wextra"
 	)
+	# add_compile_options("-fvisibility=hidden")
 endif()
 
-# Clang Tools
-if(HAVE_CLANG)
+################################################################################
+# Extra Tools
+################################################################################
+
+# Clang
+if(${PREFIX}ENABLE_CLANG AND HAVE_CLANG)
+	generate_compile_commands_json(
+		TARGETS ${PROJECT_NAME}
+	)
+	clang_tidy(
+		TARGETS ${PROJECT_NAME}
+		VERSION 9.0.0
+	)
 	clang_format(
 		TARGETS ${PROJECT_NAME}
 		DEPENDENCY
 		VERSION 9.0.0
 	)
+endif()
+
+# Apple otool
+if(D_PLATFORM_MAC)
+	# OBS
+	add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
+		COMMAND install_name_tool ARGS -change "@rpath/libobs.0.dylib" "@executable_path/../Frameworks/libobs.0.dylib" $<TARGET_FILE:${PROJECT_NAME}>
+	)
+	message(STATUS "${LOGPREFIX} Added post-build step for adjusting libobs linking path.")
+
+	# OBS Front-End API
+	add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
+		COMMAND install_name_tool ARGS -change "@rpath/libobs-frontend-api.dylib" "@executable_path/../Frameworks/libobs-frontend-api.dylib" $<TARGET_FILE:${PROJECT_NAME}>
+	)
+	message(STATUS "${LOGPREFIX} Added post-build step for adjusting libobs-frontend-api linking path.")
+
+	# Qt5
+	string(LENGTH "${Qt5_DIR}" T_PATH_LEN)
+	math(EXPR T_PATH_LEN "${T_PATH_LEN} - 10")
+	string(SUBSTRING "${Qt5_DIR}" 0 ${T_PATH_LEN} T_PATH)
+	add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
+	# - QtCore
+		COMMAND install_name_tool ARGS -change "${T_PATH}/QtCore.framework/Versions/5/QtCore" "@executable_path/../Frameworks/QtCore.framework/Versions/5/QtCore" $<TARGET_FILE:${PROJECT_NAME}>
+	# - QtGui
+		COMMAND install_name_tool ARGS -change "${T_PATH}/QtGui.framework/Versions/5/QtGui" "@executable_path/../Frameworks/QtGui.framework/Versions/5/QtGui" $<TARGET_FILE:${PROJECT_NAME}>
+	# - QtWidgets
+		COMMAND install_name_tool ARGS -change "${T_PATH}/QtWidgets.framework/Versions/5/QtWidgets" "@executable_path/../Frameworks/QtWidgets.framework/Versions/5/QtWidgets" $<TARGET_FILE:${PROJECT_NAME}>
+	)
+	message(STATUS "${LOGPREFIX} Added post-build step for adjusting Qt5 linking path (Found: ${Qt5_DIR} resolved to ${T_PATH}).")
 endif()
 
 ################################################################################
@@ -605,13 +900,6 @@ endif()
 
 if(${PropertyPrefix}OBS_NATIVE)
 	install_obs_plugin_with_data(${PROJECT_NAME} data)
-	install(FILES ${LIBZIP_BINARIES}
-		DESTINATION "./obs-plugins/${BITS}bit/")
-	add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
-		COMMAND "${CMAKE_COMMAND}" -E copy
-			"${LIBZIP_BINARIES}"
-			"${CMAKE_BINARY_DIR}/rundir/$<CONFIGURATION>/obs-plugins/${BITS}bit/"
-		VERBATIM)
 else()
 	if(UNIX_LOCAL_STRUCTURE)
 		install(
@@ -643,8 +931,6 @@ else()
 			RUNTIME DESTINATION "./obs-plugins/${BITS}bit/" COMPONENT Runtime
 			LIBRARY DESTINATION "./obs-plugins/${BITS}bit/" COMPONENT Runtime
 		)
-		install(FILES ${LIBZIP_BINARIES}
-			DESTINATION "./obs-plugins/${BITS}bit/")
 		if(MSVC)
 			install(
 				FILES $<TARGET_PDB_FILE:${PROJECT_NAME}>
