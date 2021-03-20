@@ -298,3 +298,132 @@ jobs:
       with:
         name: ${{ matrix.id }}
         path: build/package
+  macos:
+    strategy:
+      fail-fast: true
+      matrix: 
+        runner: [ macos-latest ]
+        include:
+          - runner: macos-latest
+            id: macos-10.15
+            target-version: "10.15"
+    name: "MacOS (${{ matrix.target-version }})"
+    runs-on: ${{ matrix.runner }}
+    env:
+      CMAKE_GENERATOR: "Xcode"
+      CMAKE_OSX_DEPLOYMENT_TARGET: "${{ matrix.target-version }}"
+    steps:
+    - name: "Clone Repository"
+      uses: actions/checkout@v2
+      with:
+        submodules: recursive
+        fetch-depth: 0
+    - name: "qt: 5.15.2"
+      shell: bash
+      run: |
+        brew install qt@5
+    - name: "zlib: Information"
+      shell: bash
+      id: zlib-info
+      run: |
+        cd "${PWD}/third-party/zlib-ng/"
+        version=$(git describe --tags --long --abbrev=8 HEAD)
+        echo "zlib: ${version}"
+        echo "::set-output name=version::${version}"
+    - name: "zlib: Cache"
+      uses: actions/cache@v2
+      id: zlib-cache
+      with:
+        path: |
+          build/zlib/distrib
+        key: zlib-${{steps.zlib-info.outputs.version}}-${{ matrix.id }}-${{ secrets.CACHE_VERSION }}
+    - name: "zlib: Configure"
+      if: "steps.zlib-cache.outputs.cache-hit != 'true'"
+      shell: bash
+      run: |
+        cmake -Hthird-party/zlib-ng -Bbuild/zlib/build \
+          -DCMAKE_INSTALL_PREFIX=build/zlib/distrib \
+          -DBIN_INSTALL_DIR=build/zlib/distrib/bin \
+          -DLIB_INSTALL_DIR=build/zlib/distrib/lib \
+          -DINC_INSTALL_DIR=build/zlib/distrib/include \
+          -DPKGCONFIG_INSTALL_DIR=build/zlib/distrib/lib/pkgconfig \
+          -DMAN_INSTALL_DIR=build/zlib/distrib/share/man \
+          -DCMAKE_POSITION_INDEPENDENT_CODE=ON \
+          -DCMAKE_BUILD_TYPE=Release \
+          -DBUILD_SHARED_LIBS=OFF \
+          -DZLIB_COMPAT=ON \
+          -DZLIB_ENABLE_TESTS=OFF
+    - name: "zlib: Build"
+      if: "steps.zlib-cache.outputs.cache-hit != 'true'"
+      shell: bash
+      run: |
+        cmake --build build/zlib/build --config Release --target install
+    - name: "libzip: Information"
+      shell: bash
+      id: libzip-info
+      run: |        
+        cd "${PWD}/third-party/libzip/"
+        version=$(git describe --tags --long --abbrev=8 HEAD)
+        echo "libzip: ${version}"
+        echo "::set-output name=version::${version}"
+    - name: "libzip: Cache"
+      uses: actions/cache@v2
+      id: libzip-cache
+      with:
+        path: |
+          build/libzip/distrib
+        key: libzip-${{steps.zlib-info.outputs.version}}-${{steps.libzip-info.outputs.version}}-${{ matrix.id }}-${{ secrets.CACHE_VERSION }}
+    - name: "libzip: Configure"
+      if: "(steps.zlib-cache.outputs.cache-hit != 'true') || (steps.libzip-cache.outputs.cache-hit != 'true')"
+      shell: bash
+      run: |
+        cmake -Hthird-party/libzip -Bbuild/libzip/build \
+          -DCMAKE_INSTALL_PREFIX=build/libzip/distrib \
+          -DCMAKE_POSITION_INDEPENDENT_CODE=ON \
+          -DCMAKE_BUILD_TYPE=Release \
+          -DENABLE_BZIP2=OFF \
+          -DENABLE_LZMA=OFF \
+          -DENABLE_COMMONCRYPTO=OFF \
+          -DENABLE_GNUTLS=OFF \
+          -DENABLE_MBEDTLS=OFF \
+          -DENABLE_OPENSSL=OFF \
+          -DENABLE_WINDOWS_CRYPTO=OFF \
+          -DBUILD_DOC=OFF \
+          -DBUILD_EXAMPLES=OFF \
+          -DBUILD_REGRESS=OFF \
+          -DBUILD_SHARED_LIBS=OFF \
+          -DBUILD_TOOLS=OFF \
+          -DZLIB_INCLUDE_DIR=build/zlib/distrib/include \
+          -DZLIB_LIBRARY_DEBUG=build/zlib/distrib/lib/zlib.a \
+          -DZLIB_LIBRARY_RELEASE=build/zlib/distrib/lib/zlib.a
+    - name: "libzip: Build"
+      if: "(steps.zlib-cache.outputs.cache-hit != 'true') || (steps.libzip-cache.outputs.cache-hit != 'true')"
+      shell: bash
+      run: |
+        cmake --build build/libzip/build --config Release --target install
+    - name: "own3d: Configure"
+      shell: bash
+      run: |
+        cmake -H. -Bbuild/temp \
+          "-DCMAKE_INSTALL_PREFIX=${PWD}/build/distrib" \
+          "-DCMAKE_PACKAGE_NAME=own3d-pro" \
+          "-DCMAKE_PACKAGE_PREFIX=${PWD}/build/package" \
+          -DZLIB_INCLUDE=build/zlib/distrib/include \
+          -DZLIB_LIBRARY=build/zlib/distrib/lib/libz.a \
+          -Dlibzip_DIR="${PWD}/build/libzip/distrib/lib/cmake/libzip" \
+          -DQt5_DIR=/usr/local/Cellar/qt@5/5.15.2/lib/cmake/Qt5/
+    - name: "own3d: Build"
+      shell: bash
+      run: |
+        cmake --build build/temp --config RelWithDebInfo --target install
+    - name: "own3d: Package"
+      shell: bash
+      run: |
+        mkdir "${PWD}/build/package"
+        cmake --build build/temp --config RelWithDebInfo --target PACKAGE_7Z
+        cmake --build build/temp --config RelWithDebInfo --target PACKAGE_ZIP
+    - name: "Artifacts"
+      uses: actions/upload-artifact@v1
+      with:
+        name: ${{ matrix.id }}
+        path: build/package
