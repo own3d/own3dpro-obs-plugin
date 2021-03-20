@@ -15,27 +15,115 @@ jobs:
       CMAKE_GENERATOR: "Ninja"
     steps:
     - name: "Clone Repository"
-      uses: actions/checkout@v1
-    - name: "Submodules & Packages"
+      uses: actions/checkout@v2
+      with:
+        submodules: recursive
+        fetch-depth: 0
+    - name: "Prerequisites"
       shell: bash
       run: |
-        git submodule update --init --recursive
         sudo apt-get -qq update
         sudo apt-get purge libjpeg9-dev:amd64 libjpeg8-dev:amd64 libjpeg-turbo8-dev:amd64
-        sudo apt-get install build-essential clang clang-format checkinstall pkg-config cmake ninja-build git qt5-default libqwt-qt5-dev libqt5svg5-dev
-    - name: "Cache: Prerequisites"
+        sudo apt-get install \
+          build-essential \
+          cmake \
+          ninja-build \
+          git \
+          qt5-default libqwt-qt5-dev libqt5svg5-dev \
+          libavcodec-dev libavdevice-dev libavfilter-dev libavformat-dev libavutil-dev libswresample-dev libswscale-dev \
+          libcurl4-openssl-dev \
+          checkinstall pkg-config \
+          ${{ matrix.packages }}
+        ${{ matrix.extra_command }}
+    - name: "zlib: Information"
+      shell: bash
+      id: zlib-info
+      run: |
+        cd "${PWD}/third-party/zlib-ng/"
+        version=$(git describe --tags --long --abbrev=8 HEAD)
+        echo "zlib: ${version}"
+        echo "::set-output name=version::${version}"
+    - name: "zlib: Cache"
       uses: actions/cache@v2
+      id: zlib-cache
       with:
         path: |
-          build/temp/libobs-download/libobs-download-prefix/src/libobs.7z
-        key: ubuntu-20.04
+          build/zlib/distrib
+        key: zlib-${{steps.zlib-info.outputs.version}}-${{ matrix.id }}
+    - name: "zlib: Configure"
+      if: "steps.zlib-cache.outputs.cache-hit != 'true'"
+      shell: bash
+      run: |
+        cmake -Hthird-party/zlib-ng -Bbuild/zlib/build \
+          -DCMAKE_INSTALL_PREFIX=build/zlib/distrib \
+          -DBIN_INSTALL_DIR=build/zlib/distrib/bin \
+          -DLIB_INSTALL_DIR=build/zlib/distrib/lib \
+          -DINC_INSTALL_DIR=build/zlib/distrib/include \
+          -DPKGCONFIG_INSTALL_DIR=build/zlib/distrib/lib/pkgconfig \
+          -DMAN_INSTALL_DIR=build/zlib/distrib/share/man \
+          -DCMAKE_POSITION_INDEPENDENT_CODE=ON \
+          -DCMAKE_BUILD_TYPE=Release \
+          -DBUILD_SHARED_LIBS=OFF \
+          -DZLIB_COMPAT=ON \
+          -DZLIB_ENABLE_TESTS=OFF
+    - name: "zlib: Build"
+      if: "steps.zlib-cache.outputs.cache-hit != 'true'"
+      shell: bash
+      run: |
+        cmake --build build/zlib/build --config Release --target install
+    - name: "libzip: Information"
+      shell: bash
+      id: libzip-info
+      run: |        
+        cd "${PWD}/third-party/libzip/"
+        version=$(git describe --tags --long --abbrev=8 HEAD)
+        echo "libzip: ${version}"
+        echo "::set-output name=version::${version}"
+    - name: "libzip: Cache"
+      uses: actions/cache@v2
+      id: libzip-cache
+      with:
+        path: |
+          build/libzip/distrib
+        key: libzip-${{steps.libzip-info.outputs.version}}-${{ matrix.id }}
+    - name: "libzip: Configure"
+      if: "(steps.zlib-cache.outputs.cache-hit != 'true') || (steps.libzip-cache.outputs.cache-hit != 'true')"
+      shell: bash
+      run: |
+        cmake -Hthird-party/libzip -Bbuild/libzip/build \
+          -DCMAKE_INSTALL_PREFIX=build/libzip/distrib \
+          -DCMAKE_POSITION_INDEPENDENT_CODE=ON \
+          -DCMAKE_BUILD_TYPE=Release \
+          -DENABLE_BZIP2=OFF \
+          -DENABLE_LZMA=OFF \
+          -DENABLE_COMMONCRYPTO=OFF \
+          -DENABLE_GNUTLS=OFF \
+          -DENABLE_MBEDTLS=OFF \
+          -DENABLE_OPENSSL=OFF \
+          -DENABLE_WINDOWS_CRYPTO=OFF \
+          -DBUILD_DOC=OFF \
+          -DBUILD_EXAMPLES=OFF \
+          -DBUILD_REGRESS=OFF \
+          -DBUILD_SHARED_LIBS=OFF \
+          -DBUILD_TOOLS=OFF \
+          -DZLIB_INCLUDE_DIR=build/zlib/distrib/include \
+          -DZLIB_LIBRARY_DEBUG=build/zlib/distrib/lib/libz.a \
+          -DZLIB_LIBRARY_RELEASE=build/zlib/distrib/lib/libz.a
+    - name: "libzip: Build"
+      if: "(steps.zlib-cache.outputs.cache-hit != 'true') || (steps.libzip-cache.outputs.cache-hit != 'true')"
+      shell: bash
+      run: |
+        cmake --build build/libzip/build --config Release --target install
     - name: "Configure & Format Project"
       shell: bash
       run: |
         cmake -H. -B"build/temp" \
-          -DCMAKE_INSTALL_PREFIX="build/distrib" \
-          -DCMAKE_PACKAGE_NAME="own3d-${{ matrix.id }}" -DCMAKE_PACKAGE_PREFIX="build/package" \
-          -DOBS_DOWNLOAD=ON \
+          "-DCMAKE_INSTALL_PREFIX=${PWD}/build/distrib" \
+          "-DCMAKE_PACKAGE_NAME=own3d-pro" \
+          "-DCMAKE_PACKAGE_PREFIX=${PWD}/build/package" \
+          -DZLIB_INCLUDE=build/zlib/distrib/include \
+          -DZLIB_LIBRARY=build/zlib/distrib/lib/libz.a \
+          -Dlibzip_DIR="${PWD}/build/libzip/distrib/lib/cmake/libzip" \
           -DENABLE_CLANG=TRUE
         cmake --build "build/temp" --config RelWithDebInfo --target own3d_CLANG-FORMAT
     - name: "Validate Formatting"
