@@ -115,7 +115,7 @@ jobs:
       run: |
         cmake -H. -Bbuild/temp \
           "-DCMAKE_INSTALL_PREFIX=${PWD}/build/distrib" \
-          "-DCMAKE_PACKAGE_NAME=own3d-pro" \
+          "-DCMAKE_PACKAGE_NAME=own3d-pro-unsigned-${{ matrix.id}}" \
           "-DCMAKE_PACKAGE_PREFIX=${PWD}/build/package" \
           -DDOWNLOAD_QT=ON \
           -DZLIB_INCLUDE=build/zlib/distrib/include \
@@ -278,7 +278,7 @@ jobs:
       run: |
         cmake -H. -Bbuild/temp \
           "-DCMAKE_INSTALL_PREFIX=${PWD}/build/distrib" \
-          "-DCMAKE_PACKAGE_NAME=own3d-pro" \
+          "-DCMAKE_PACKAGE_NAME=own3d-pro-unsigned-${{ matrix.id}}" \
           "-DCMAKE_PACKAGE_PREFIX=${PWD}/build/package" \
           -DZLIB_INCLUDE=build/zlib/distrib/include \
           -DZLIB_LIBRARY=build/zlib/distrib/lib/libz.a \
@@ -406,7 +406,7 @@ jobs:
       run: |
         cmake -H. -Bbuild/temp \
           "-DCMAKE_INSTALL_PREFIX=${PWD}/build/distrib" \
-          "-DCMAKE_PACKAGE_NAME=own3d-pro" \
+          "-DCMAKE_PACKAGE_NAME=own3d-pro-unsigned-${{ matrix.id}}" \
           "-DCMAKE_PACKAGE_PREFIX=${PWD}/build/package" \
           -DZLIB_INCLUDE=build/zlib/distrib/include \
           -DZLIB_LIBRARY=build/zlib/distrib/lib/libz.a \
