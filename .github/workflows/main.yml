@@ -12,6 +12,7 @@ jobs:
   windows:
     name: "Windows 64-bit"
     strategy:
+      fail-fast: true
       matrix: 
         runner: [ windows-2019 ]
         include:
@@ -27,41 +28,117 @@ jobs:
       CMAKE_GENERATOR_TOOLSET: "host=x64"
       CMAKE_SYSTEM_VERSION: ${{ matrix.windows_sdk }}
     steps:
-    - name: "Clone Repository"
-      uses: actions/checkout@v1
-    - name: "Clone Submodules"
+    - name: "Clone"
+      uses: actions/checkout@v2
+      with:
+        submodules: recursive
+        fetch-depth: 0
+    - name: "zlib: Information"
       shell: bash
-      run: git submodule update --init --recursive
-    - name: "Cache: Prerequisites"
+      id: zlib-info
+      run: |
+        cd "${PWD}/third-party/zlib-ng/"
+        version=$(git describe --tags --long --abbrev=8 HEAD)
+        echo "zlib: ${version}"
+        echo "::set-output name=version::${version}"
+    - name: "zlib: Cache"
       uses: actions/cache@v2
+      id: zlib-cache
       with:
         path: |
-          build/temp/qt-download/qt-download-prefix/src/qt.7z
-          build/temp/obsdeps-download/obsdeps-download-prefix/src/obsdeps.7z
-          build/temp/libobs-download/libobs-download-prefix/src/libobs.7z
-        key: ${{ matrix.id }}
-    - name: "Configure Project"
+          build/zlib/distrib
+        key: zlib-${{steps.zlib-info.outputs.version}}-${{ matrix.id }}-${{ secrets.CACHE_VERSION }}
+    - name: "zlib: Configure"
+      if: "steps.zlib-cache.outputs.cache-hit != 'true'"
       shell: bash
       run: |
-        cmake -H. -B"build/temp" -DCMAKE_INSTALL_PREFIX="build/distrib" -DCMAKE_PACKAGE_NAME="own3d-pro" -DCMAKE_PACKAGE_PREFIX="build/package" -DOBS_DOWNLOAD=ON
-    - name: "Build Project"
+        cmake -Hthird-party/zlib-ng -Bbuild/zlib/build \
+          -DCMAKE_INSTALL_PREFIX=build/zlib/distrib \
+          -DBIN_INSTALL_DIR=build/zlib/distrib/bin \
+          -DLIB_INSTALL_DIR=build/zlib/distrib/lib \
+          -DINC_INSTALL_DIR=build/zlib/distrib/include \
+          -DPKGCONFIG_INSTALL_DIR=build/zlib/distrib/lib/pkgconfig \
+          -DMAN_INSTALL_DIR=build/zlib/distrib/share/man \
+          -DCMAKE_BUILD_TYPE=Release \
+          -DBUILD_SHARED_LIBS=OFF \
+          -DZLIB_COMPAT=ON \
+          -DZLIB_ENABLE_TESTS=OFF
+    - name: "zlib: Build"
+      if: "steps.zlib-cache.outputs.cache-hit != 'true'"
       shell: bash
       run: |
-        cmake --build "build/temp" --config RelWithDebInfo --target INSTALL
-    - name: "Package Project"
+        cmake --build build/zlib/build --config Release --target INSTALL
+    - name: "libzip: Information"
+      shell: bash
+      id: libzip-info
+      run: |        
+        cd "${PWD}/third-party/libzip/"
+        version=$(git describe --tags --long --abbrev=8 HEAD)
+        echo "libzip: ${version}"
+        echo "::set-output name=version::${version}"
+    - name: "libzip: Cache"
+      uses: actions/cache@v2
+      id: libzip-cache
+      with:
+        path: |
+          build/libzip/distrib
+        key: libzip-${{steps.zlib-info.outputs.version}}-${{steps.libzip-info.outputs.version}}-${{ matrix.id }}-${{ secrets.CACHE_VERSION }}
+    - name: "libzip: Configure"
+      if: "(steps.zlib-cache.outputs.cache-hit != 'true') || (steps.libzip-cache.outputs.cache-hit != 'true')"
       shell: bash
       run: |
-        mkdir build/package
-        cmake --build "build/temp" --config RelWithDebInfo --target PACKAGE_7Z
-        cmake --build "build/temp" --config RelWithDebInfo --target PACKAGE_ZIP
-    - name: "Package Installer (Prereqs)"
+        cmake -Hthird-party/libzip -Bbuild/libzip/build \
+          -DCMAKE_INSTALL_PREFIX=build/libzip/distrib \
+          -DCMAKE_BUILD_TYPE=Release \
+          -DENABLE_BZIP2=OFF \
+          -DENABLE_LZMA=OFF \
+          -DENABLE_COMMONCRYPTO=OFF \
+          -DENABLE_GNUTLS=OFF \
+          -DENABLE_MBEDTLS=OFF \
+          -DENABLE_OPENSSL=OFF \
+          -DENABLE_WINDOWS_CRYPTO=OFF \
+          -DBUILD_DOC=OFF \
+          -DBUILD_EXAMPLES=OFF \
+          -DBUILD_REGRESS=OFF \
+          -DBUILD_SHARED_LIBS=OFF \
+          -DBUILD_TOOLS=OFF \
+          -DZLIB_INCLUDE_DIR=build/zlib/distrib/include \
+          -DZLIB_LIBRARY_DEBUG=build/zlib/distrib/lib/zlib.lib \
+          -DZLIB_LIBRARY_RELEASE=build/zlib/distrib/lib/zlib.lib
+    - name: "libzip: Build"
+      if: "(steps.zlib-cache.outputs.cache-hit != 'true') || (steps.libzip-cache.outputs.cache-hit != 'true')"
+      shell: bash
+      run: |
+        cmake --build build/libzip/build --config Release --target INSTALL
+    - name: "own3d: Configure"
+      shell: bash
+      run: |
+        cmake -H. -Bbuild/temp \
+          "-DCMAKE_INSTALL_PREFIX=${PWD}/build/distrib" \
+          "-DCMAKE_PACKAGE_NAME=own3d-pro" \
+          "-DCMAKE_PACKAGE_PREFIX=${PWD}/build/package" \
+          -DDOWNLOAD_QT=ON \
+          -DZLIB_INCLUDE=build/zlib/distrib/include \
+          -DZLIB_LIBRARY=build/zlib/distrib/lib/zlib.lib \
+          -Dlibzip_DIR="${PWD}/build/libzip/distrib/lib/cmake/libzip"
+    - name: "own3d: Build"
+      shell: bash
+      run: |
+        cmake --build build/temp --config RelWithDebInfo --target INSTALL
+    - name: "own3d: Package"
+      shell: bash
+      run: |
+        mkdir "${PWD}/build/package"
+        cmake --build build/temp --config RelWithDebInfo --target PACKAGE_7Z
+        cmake --build build/temp --config RelWithDebInfo --target PACKAGE_ZIP
+    - name: "own3d: Package Installer (Prereqs)"
       run: |
         curl "-kL" "https://cdn.xaymar.com/ci/innosetup-6.0.3.exe" "-f" "--retry" "5" "-o" "inno.exe"
         .\inno.exe /VERYSILENT /SP- /SUPPRESSMSGBOXES /NORESTART
-    - name: "Package Installer (Compile)"
+    - name: "own3d: Package Installer (Compile)"
       run: |
         & 'C:\Program Files (x86)\Inno Setup 6\ISCC.exe' /Qp ".\build\temp\installer.iss"
-    - name: "Upload Artifacts"
+    - name: "Artifacts"
       uses: actions/upload-artifact@v1
       with:
         name: ${{ matrix.id }}
