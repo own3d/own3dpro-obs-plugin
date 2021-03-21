@@ -126,9 +126,7 @@ jobs:
           -DBUILD_REGRESS=OFF \
           -DBUILD_SHARED_LIBS=ON \
           -DBUILD_TOOLS=OFF \
-          -DZLIB_INCLUDE_DIR=build/zlib/distrib/include \
-          -DZLIB_LIBRARY_DEBUG=build/zlib/distrib/lib/zlib.lib \
-          -DZLIB_LIBRARY_RELEASE=build/zlib/distrib/lib/zlib.lib
+          -DZLIB_ROOT=build/zlib/distrib
     - name: "libzip: Build"
       if: "(steps.zlib-cache.outputs.cache-hit != 'true') || (steps.libzip-cache.outputs.cache-hit != 'true')"
       shell: bash
@@ -142,8 +140,7 @@ jobs:
           "-DCMAKE_PACKAGE_NAME=own3d-pro-unsigned-${{ matrix.id}}" \
           "-DCMAKE_PACKAGE_PREFIX=${PWD}/build/package" \
           -DDOWNLOAD_QT=ON \
-          -DZLIB_INCLUDE=build/zlib/distrib/include \
-          -DZLIB_LIBRARY=build/zlib/distrib/lib/zlib.lib \
+          -DZLIB_ROOT=build/zlib/distrib \
           -Dlibzip_DIR="${PWD}/build/libzip/distrib/lib/cmake/libzip"
     - name: "own3d: Build"
       shell: bash
@@ -297,9 +294,7 @@ jobs:
           -DBUILD_REGRESS=OFF \
           -DBUILD_SHARED_LIBS=ON \
           -DBUILD_TOOLS=OFF \
-          -DZLIB_INCLUDE_DIR=build/zlib/distrib/include \
-          -DZLIB_LIBRARY_DEBUG=build/zlib/distrib/lib/libz.so \
-          -DZLIB_LIBRARY_RELEASE=build/zlib/distrib/lib/libz.so
+          -DZLIB_ROOT=build/zlib/distrib
     - name: "libzip: Build"
       if: "(steps.zlib-cache.outputs.cache-hit != 'true') || (steps.libzip-cache.outputs.cache-hit != 'true')"
       shell: bash
@@ -312,8 +307,7 @@ jobs:
           "-DCMAKE_INSTALL_PREFIX=${PWD}/build/distrib" \
           "-DCMAKE_PACKAGE_NAME=own3d-pro-unsigned-${{ matrix.id}}" \
           "-DCMAKE_PACKAGE_PREFIX=${PWD}/build/package" \
-          -DZLIB_INCLUDE=build/zlib/distrib/include \
-          -DZLIB_LIBRARY=build/zlib/distrib/lib/libz.so \
+          -DZLIB_ROOT=build/zlib/distrib \
           -Dlibzip_DIR="${PWD}/build/libzip/distrib/lib/cmake/libzip"
     - name: "own3d: Build"
       shell: bash
@@ -451,9 +445,7 @@ jobs:
           -DBUILD_REGRESS=OFF \
           -DBUILD_SHARED_LIBS=ON \
           -DBUILD_TOOLS=OFF \
-          -DZLIB_INCLUDE_DIR=build/zlib/distrib/include \
-          -DZLIB_LIBRARY_DEBUG=build/zlib/distrib/lib/libz.dylib \
-          -DZLIB_LIBRARY_RELEASE=build/zlib/distrib/lib/libz.dylib
+          -DZLIB_ROOT=build/zlib/distrib
     - name: "libzip: Build"
       if: "(steps.zlib-cache.outputs.cache-hit != 'true') || (steps.libzip-cache.outputs.cache-hit != 'true')"
       shell: bash
@@ -466,8 +458,7 @@ jobs:
           "-DCMAKE_INSTALL_PREFIX=${PWD}/build/distrib" \
           "-DCMAKE_PACKAGE_NAME=own3d-pro-unsigned-${{ matrix.id}}" \
           "-DCMAKE_PACKAGE_PREFIX=${PWD}/build/package" \
-          -DZLIB_INCLUDE=build/zlib/distrib/include \
-          -DZLIB_LIBRARY=build/zlib/distrib/lib/libz.dylib \
+          -DZLIB_ROOT=build/zlib/distrib \
           -Dlibzip_DIR="${PWD}/build/libzip/distrib/lib/cmake/libzip" \
           -DQt5_DIR=/usr/local/Cellar/qt@5/5.15.2/lib/cmake/Qt5/
     - name: "own3d: Build"
