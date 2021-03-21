@@ -319,6 +319,8 @@ jobs:
       shell: bash
       run: |
         cmake --build build/temp --config RelWithDebInfo --target install
+        cp build/zlib/distrib/lib/libz*.so build/distrib/plugins/own3d/bin/64bit/
+        cp build/libzip/distrib/lib/libzip*.so build/distrib/plugins/own3d/bin/64bit/
     - name: "own3d: Package"
       shell: bash
       run: |
@@ -472,6 +474,8 @@ jobs:
       shell: bash
       run: |
         cmake --build build/temp --config RelWithDebInfo --target install
+        cp build/zlib/distrib/lib/libz*.dylib build/distrib/own3d/bin/
+        cp build/libzip/distrib/lib/libzip*.dylib build/distrib/own3d/bin/
     - name: "own3d: Package"
       shell: bash
       run: |
