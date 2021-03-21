@@ -404,7 +404,10 @@ jobs:
           -DCMAKE_BUILD_TYPE=Release \
           -DBUILD_SHARED_LIBS=ON \
           -DZLIB_COMPAT=ON \
-          -DZLIB_ENABLE_TESTS=OFF
+          -DZLIB_ENABLE_TESTS=OFF \
+          -DCMAKE_XCODE_ATTRIBUTE_CODE_SIGN_IDENTITY="" \
+          -DCMAKE_XCODE_ATTRIBUTE_CODE_SIGNING_REQUIRED="NO" \
+          -DCMAKE_XCODE_ATTRIBUTE_CODE_SIGNING_ALLOWED="NO"
     - name: "zlib: Build"
       if: "steps.zlib-cache.outputs.cache-hit != 'true'"
       shell: bash
@@ -445,7 +448,10 @@ jobs:
           -DBUILD_REGRESS=OFF \
           -DBUILD_SHARED_LIBS=ON \
           -DBUILD_TOOLS=OFF \
-          -DZLIB_ROOT=build/zlib/distrib
+          -DZLIB_ROOT=build/zlib/distrib \
+          -DCMAKE_XCODE_ATTRIBUTE_CODE_SIGN_IDENTITY="" \
+          -DCMAKE_XCODE_ATTRIBUTE_CODE_SIGNING_REQUIRED="NO" \
+          -DCMAKE_XCODE_ATTRIBUTE_CODE_SIGNING_ALLOWED="NO"
     - name: "libzip: Build"
       if: "(steps.zlib-cache.outputs.cache-hit != 'true') || (steps.libzip-cache.outputs.cache-hit != 'true')"
       shell: bash
@@ -460,7 +466,10 @@ jobs:
           "-DCMAKE_PACKAGE_PREFIX=${PWD}/build/package" \
           -DZLIB_ROOT=build/zlib/distrib \
           -Dlibzip_DIR="${PWD}/build/libzip/distrib/lib/cmake/libzip" \
-          -DQt5_DIR=/usr/local/Cellar/qt@5/5.15.2/lib/cmake/Qt5/
+          -DQt5_DIR=/usr/local/Cellar/qt@5/5.15.2/lib/cmake/Qt5/ \
+          -DCMAKE_XCODE_ATTRIBUTE_CODE_SIGN_IDENTITY="" \
+          -DCMAKE_XCODE_ATTRIBUTE_CODE_SIGNING_REQUIRED="NO" \
+          -DCMAKE_XCODE_ATTRIBUTE_CODE_SIGNING_ALLOWED="NO"
     - name: "own3d: Build"
       shell: bash
       run: |
