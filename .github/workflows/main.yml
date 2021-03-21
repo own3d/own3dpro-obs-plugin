@@ -218,6 +218,14 @@ jobs:
           checkinstall pkg-config \
           ${{ matrix.packages }}
         ${{ matrix.extra_command }}
+    - name: "libobs: Cache"
+      uses: actions/cache@v2
+      with:
+        path: |
+          build/temp/libobs-download
+          build/temp/libobs-src
+          build/temp/libobs-build
+        key: libobs-${{ matrix.id }}-${{ secrets.CACHE_VERSION }}
     - name: "zlib: Information"
       shell: bash
       id: zlib-info
