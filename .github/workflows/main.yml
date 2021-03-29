@@ -1,6 +1,6 @@
 name: Build
 
-on: 
+on:
   push:
     branches-ignore:
       - 'l10n_master'
@@ -13,7 +13,7 @@ jobs:
     name: "Windows 64-bit"
     strategy:
       fail-fast: true
-      matrix: 
+      matrix:
         runner: [ windows-2019 ]
         include:
           - runner: windows-2019
@@ -95,7 +95,7 @@ jobs:
     - name: "libzip: Information"
       shell: bash
       id: libzip-info
-      run: |        
+      run: |
         cd "${PWD}/third-party/libzip/"
         version=$(git describe --tags --long --abbrev=8 HEAD)
         echo "libzip: ${version}"
@@ -126,7 +126,9 @@ jobs:
           -DBUILD_REGRESS=OFF \
           -DBUILD_SHARED_LIBS=ON \
           -DBUILD_TOOLS=OFF \
-          -DZLIB_ROOT=build/zlib/distrib
+          -DZLIB_ROOT=build/zlib/distrib \
+          -DZLIB_INCLUDE_DIR=build/zlib/distrib/include \
+          -DZLIB_LIBRARY=build/zlib/distrib/lib/zlib.lib
     - name: "libzip: Build"
       if: "(steps.zlib-cache.outputs.cache-hit != 'true') || (steps.libzip-cache.outputs.cache-hit != 'true')"
       shell: bash
@@ -262,7 +264,7 @@ jobs:
     - name: "libzip: Information"
       shell: bash
       id: libzip-info
-      run: |        
+      run: |
         cd "${PWD}/third-party/libzip/"
         version=$(git describe --tags --long --abbrev=8 HEAD)
         echo "libzip: ${version}"
@@ -294,7 +296,9 @@ jobs:
           -DBUILD_REGRESS=OFF \
           -DBUILD_SHARED_LIBS=ON \
           -DBUILD_TOOLS=OFF \
-          -DZLIB_ROOT=build/zlib/distrib
+          -DZLIB_ROOT=build/zlib/distrib \
+          -DZLIB_INCLUDE_DIR=build/zlib/distrib/include \
+          -DZLIB_LIBRARY=build/zlib/distrib/lib/libz.so
     - name: "libzip: Build"
       if: "(steps.zlib-cache.outputs.cache-hit != 'true') || (steps.libzip-cache.outputs.cache-hit != 'true')"
       shell: bash
@@ -329,7 +333,7 @@ jobs:
   macos:
     strategy:
       fail-fast: true
-      matrix: 
+      matrix:
         runner: [ macos-latest ]
         include:
           - runner: macos-latest
@@ -416,7 +420,7 @@ jobs:
     - name: "libzip: Information"
       shell: bash
       id: libzip-info
-      run: |        
+      run: |
         cd "${PWD}/third-party/libzip/"
         version=$(git describe --tags --long --abbrev=8 HEAD)
         echo "libzip: ${version}"
@@ -449,6 +453,8 @@ jobs:
           -DBUILD_SHARED_LIBS=ON \
           -DBUILD_TOOLS=OFF \
           -DZLIB_ROOT=build/zlib/distrib \
+          -DZLIB_INCLUDE_DIR=build/zlib/distrib/include \
+          -DZLIB_LIBRARY=build/zlib/distrib/lib/libz.dylib \
           -DCMAKE_XCODE_ATTRIBUTE_CODE_SIGN_IDENTITY="" \
           -DCMAKE_XCODE_ATTRIBUTE_CODE_SIGNING_REQUIRED="NO" \
           -DCMAKE_XCODE_ATTRIBUTE_CODE_SIGNING_ALLOWED="NO"
