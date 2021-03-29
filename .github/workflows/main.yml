@@ -296,9 +296,9 @@ jobs:
           -DBUILD_REGRESS=OFF \
           -DBUILD_SHARED_LIBS=ON \
           -DBUILD_TOOLS=OFF \
-          -DZLIB_ROOT=build/zlib/distrib \
-          -DZLIB_INCLUDE_DIR=build/zlib/distrib/include \
-          -DZLIB_LIBRARY=build/zlib/distrib/lib/libz.so
+          -DZLIB_ROOT="${PWD}/build/zlib/distrib" \
+          -DZLIB_INCLUDE_DIR="${PWD}/build/zlib/distrib/include" \
+          -DZLIB_LIBRARY="${PWD}/build/zlib/distrib/lib/libz.so"
     - name: "libzip: Build"
       if: "(steps.zlib-cache.outputs.cache-hit != 'true') || (steps.libzip-cache.outputs.cache-hit != 'true')"
       shell: bash
