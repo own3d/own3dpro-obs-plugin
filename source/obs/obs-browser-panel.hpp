@@ -7,7 +7,16 @@
 #include <functional>
 #include <string>
 
-struct QCefCookieManager {
+#define FN_EXTERN extern
+#ifdef _MSC_VER
+#define FN_IMPORT __declspec(dllimport)
+#define FN_HIDE
+#else
+#define FN_IMPORT 
+#define FN_HIDE __attribute__((visibility("hidden")))
+#endif
+
+FN_EXTERN FN_IMPORT struct QCefCookieManager {
 	virtual ~QCefCookieManager() {}
 
 	virtual bool DeleteCookies(const std::string& url, const std::string& name)                        = 0;
@@ -21,7 +30,7 @@ struct QCefCookieManager {
 
 /* ------------------------------------------------------------------------- */
 
-class QCefWidget : public QWidget {
+FN_EXTERN FN_IMPORT class QCefWidget : public QWidget {
 	Q_OBJECT
 
 	protected:
@@ -40,7 +49,7 @@ class QCefWidget : public QWidget {
 
 /* ------------------------------------------------------------------------- */
 
-struct QCef {
+FN_EXTERN FN_IMPORT struct QCef {
 	virtual ~QCef() {}
 
 	virtual bool init_browser(void)          = 0;
@@ -59,7 +68,7 @@ struct QCef {
 	virtual void add_force_popup_url(const std::string& url, QObject* obj)     = 0;
 };
 
-static inline QCef* obs_browser_init_panel(void)
+FN_HIDE static inline QCef* obs_browser_init_panel(void)
 {
 #ifdef _WIN32
 	void* lib = os_dlopen("obs-browser");
@@ -79,7 +88,7 @@ static inline QCef* obs_browser_init_panel(void)
 	return create_qcef();
 }
 
-static inline int obs_browser_qcef_version(void)
+FN_HIDE static inline int obs_browser_qcef_version(void)
 {
 #ifdef _WIN32
 	void* lib = os_dlopen("obs-browser");

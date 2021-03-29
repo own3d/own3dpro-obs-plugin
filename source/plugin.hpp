@@ -55,34 +55,44 @@
 #define __FUNCTION_SIG__ __func__
 #define __FUNCTION_NAME__ __func__
 #endif
+// Import, Export, Local
+#if defined _MSC_VER || defined __CYGWIN__
+#define LIB_IMPORT __declspec(dllimport)
+#define LIB_EXPORT __declspec(dllexport)
+#define LIB_LOCAL
+#else
+#define LIB_IMPORT __attribute__((visibility("defulat")))
+#define LIB_EXPORT __attribute__((visibility("defulat")))
+#define LIB_LOCAL __attribute__((visibility("hidden")))
+#endif
 
 namespace own3d {
-	inline void source_deleter(obs_source_t* v)
+	LIB_LOCAL inline void source_deleter(obs_source_t* v)
 	{
 		obs_source_release(v);
 	}
 
-	inline void sceneitem_deleter(obs_sceneitem_t* v)
+	LIB_LOCAL inline void sceneitem_deleter(obs_sceneitem_t* v)
 	{
 		obs_sceneitem_remove(v);
 	}
 
-	inline void data_deleter(obs_data_t* v)
+	LIB_LOCAL inline void data_deleter(obs_data_t* v)
 	{
 		obs_data_release(v);
 	}
 
-	inline void data_item_deleter(obs_data_item_t* v)
+	LIB_LOCAL inline void data_item_deleter(obs_data_item_t* v)
 	{
 		obs_data_item_release(&v);
 	}
 
-	inline void data_array_deleter(obs_data_array_t* v)
+	LIB_LOCAL inline void data_array_deleter(obs_data_array_t* v)
 	{
 		obs_data_array_release(v);
 	}
 
-	class configuration {
+	class LIB_LOCAL configuration {
 		std::shared_ptr<obs_data_t> _data;
 		std::filesystem::path       _data_path;
 		std::filesystem::path       _data_path_bk;
@@ -107,21 +117,21 @@ namespace own3d {
 		static std::shared_ptr<own3d::configuration> instance();
 	};
 
-	bool is_sandbox();
+	LIB_LOCAL bool is_sandbox();
 
-	std::string get_api_endpoint(std::string_view const args = "");
+	LIB_LOCAL std::string get_api_endpoint(std::string_view const args = "");
 
-	std::string get_web_endpoint(std::string_view const args = "");
+	LIB_LOCAL std::string get_web_endpoint(std::string_view const args = "");
 
-	bool testing_enabled();
+	LIB_LOCAL bool testing_enabled();
 
-	std::string_view testing_archive_name();
+	LIB_LOCAL std::string_view testing_archive_name();
 
-	std::string_view testing_archive_path();
+	LIB_LOCAL std::string_view testing_archive_path();
 
-	std::string_view get_unique_identifier();
+	LIB_LOCAL std::string_view get_unique_identifier();
 
-	void reset_unique_identifier();
+	LIB_LOCAL void reset_unique_identifier();
 } // namespace own3d
 
 #define D_TRANSLATE(x) obs_module_text(x)

@@ -26,7 +26,7 @@
 namespace own3d::source {
 	class chat_instance;
 
-	class chat_factory : public obs::source_factory<own3d::source::chat_factory, own3d::source::chat_instance> {
+	class LIB_LOCAL chat_factory : public obs::source_factory<own3d::source::chat_factory, own3d::source::chat_instance> {
 		public:
 		chat_factory();
 		virtual ~chat_factory();
@@ -38,7 +38,7 @@ namespace own3d::source {
 		obs_properties_t* get_properties2(own3d::source::chat_instance* data) override;
 	};
 
-	class chat_instance : public obs::source_instance {
+	class LIB_LOCAL chat_instance : public obs::source_instance {
 		std::shared_ptr<obs_source_t>           _browser;
 		std::pair<std::uint32_t, std::uint32_t> _size;
 		std::string                             _url;

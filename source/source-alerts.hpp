@@ -26,7 +26,7 @@
 namespace own3d::source {
 	class alert_instance;
 
-	class alert_factory : public obs::source_factory<own3d::source::alert_factory, own3d::source::alert_instance> {
+	class LIB_LOCAL alert_factory : public obs::source_factory<own3d::source::alert_factory, own3d::source::alert_instance> {
 		public:
 		alert_factory();
 		virtual ~alert_factory();
@@ -38,7 +38,7 @@ namespace own3d::source {
 		obs_properties_t* get_properties2(own3d::source::alert_instance* data) override;
 	};
 
-	class alert_instance : public obs::source_instance {
+	class LIB_LOCAL alert_instance : public obs::source_instance {
 		std::shared_ptr<obs_source_t>           _browser;
 		std::pair<std::uint32_t, std::uint32_t> _size;
 		std::string                             _url;

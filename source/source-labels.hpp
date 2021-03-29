@@ -26,7 +26,7 @@
 namespace own3d::source {
 	class label_instance;
 
-	class label_factory : public obs::source_factory<own3d::source::label_factory, own3d::source::label_instance> {
+	class LIB_LOCAL label_factory : public obs::source_factory<own3d::source::label_factory, own3d::source::label_instance> {
 		public:
 		label_factory();
 		virtual ~label_factory();
@@ -38,7 +38,7 @@ namespace own3d::source {
 		obs_properties_t* get_properties2(own3d::source::label_instance* data) override;
 	};
 
-	class label_instance : public obs::source_instance {
+	class LIB_LOCAL label_instance : public obs::source_instance {
 		std::shared_ptr<obs_source_t>           _browser;
 		std::pair<std::uint32_t, std::uint32_t> _size;
 		std::string                             _url;
