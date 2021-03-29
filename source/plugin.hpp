@@ -61,10 +61,11 @@
 #define LIB_EXPORT __declspec(dllexport)
 #define LIB_LOCAL
 #else
-#define LIB_IMPORT __attribute__((visibility("defulat")))
-#define LIB_EXPORT __attribute__((visibility("defulat")))
+#define LIB_IMPORT __attribute__((visibility("default")))
+#define LIB_EXPORT __attribute__((visibility("default")))
 #define LIB_LOCAL __attribute__((visibility("hidden")))
 #endif
+
 
 namespace own3d {
 	LIB_LOCAL inline void source_deleter(obs_source_t* v)

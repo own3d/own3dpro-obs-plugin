@@ -1,22 +1,11 @@
 #pragma once
-
 #include <QWidget>
+
 #include <util/platform.h>
 #include <util/util.hpp>
+#include "plugin.hpp"
 
-#include <functional>
-#include <string>
-
-#define FN_EXTERN extern
-#ifdef _MSC_VER
-#define FN_IMPORT __declspec(dllimport)
-#define FN_HIDE
-#else
-#define FN_IMPORT 
-#define FN_HIDE __attribute__((visibility("hidden")))
-#endif
-
-FN_EXTERN FN_IMPORT struct QCefCookieManager {
+LIB_LOCAL struct QCefCookieManager {
 	virtual ~QCefCookieManager() {}
 
 	virtual bool DeleteCookies(const std::string& url, const std::string& name)                        = 0;
@@ -28,9 +17,7 @@ FN_EXTERN FN_IMPORT struct QCefCookieManager {
 	virtual void CheckForCookie(const std::string& site, const std::string& cookie, cookie_exists_cb callback) = 0;
 };
 
-/* ------------------------------------------------------------------------- */
-
-FN_EXTERN FN_IMPORT class QCefWidget : public QWidget {
+LIB_LOCAL class QCefWidget : public QWidget {
 	Q_OBJECT
 
 	protected:
@@ -41,15 +28,14 @@ FN_EXTERN FN_IMPORT class QCefWidget : public QWidget {
 	virtual void setStartupScript(const std::string& script) = 0;
 	virtual void allowAllPopups(bool allow)                  = 0;
 	virtual void closeBrowser()                              = 0;
+	virtual void reloadPage()                                = 0;
 
 	signals:
 	void titleChanged(const QString& title);
 	void urlChanged(const QString& url);
 };
 
-/* ------------------------------------------------------------------------- */
-
-FN_EXTERN FN_IMPORT struct QCef {
+LIB_LOCAL struct QCef {
 	virtual ~QCef() {}
 
 	virtual bool init_browser(void)          = 0;
@@ -68,7 +54,7 @@ FN_EXTERN FN_IMPORT struct QCef {
 	virtual void add_force_popup_url(const std::string& url, QObject* obj)     = 0;
 };
 
-FN_HIDE static inline QCef* obs_browser_init_panel(void)
+static inline LIB_LOCAL QCef* obs_browser_create_qcef(void)
 {
 #ifdef _WIN32
 	void* lib = os_dlopen("obs-browser");
@@ -88,7 +74,7 @@ FN_HIDE static inline QCef* obs_browser_init_panel(void)
 	return create_qcef();
 }
 
-FN_HIDE static inline int obs_browser_qcef_version(void)
+static inline LIB_LOCAL int obs_browser_qcef_version(void)
 {
 #ifdef _WIN32
 	void* lib = os_dlopen("obs-browser");
