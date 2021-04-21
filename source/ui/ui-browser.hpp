@@ -20,7 +20,7 @@
 #include <QFrame>
 #include <QUrl>
 #include <QUrlQuery>
-#include "obs/obs-browser-panel.hpp"
+#include "obs/obs-browser.hpp"
 
 namespace own3d::ui {
 	class browser : public QDialog {

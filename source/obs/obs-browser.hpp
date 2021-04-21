@@ -1,13 +1,37 @@
+// Integration of the OWN3D service into OBS Studio
+// Copyright (C) 2021 own3d media GmbH <support@own3d.tv>
+//
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
 #pragma once
-
+#include <QString>
 #include <QWidget>
-#include <util/platform.h>
-#include <util/util.hpp>
-
 #include <functional>
 #include <string>
+#include <util/util.hpp>
 
-struct QCefCookieManager {
+// -------------------------------------------------------------------------------- //
+#define FN_EXTERN extern
+#ifdef _MSC_VER
+#define FN_IMPORT __declspec(dllimport)
+#define FN_HIDE
+#else
+#define FN_IMPORT
+#define FN_HIDE __attribute__((visibility("hidden")))
+#endif
+
+struct FN_HIDE QCefCookieManager {
 	virtual ~QCefCookieManager() {}
 
 	virtual bool DeleteCookies(const std::string& url, const std::string& name)                        = 0;
@@ -19,9 +43,7 @@ struct QCefCookieManager {
 	virtual void CheckForCookie(const std::string& site, const std::string& cookie, cookie_exists_cb callback) = 0;
 };
 
-/* ------------------------------------------------------------------------- */
-
-class QCefWidget : public QWidget {
+class FN_HIDE QCefWidget : public QWidget {
 	Q_OBJECT
 
 	protected:
@@ -38,9 +60,7 @@ class QCefWidget : public QWidget {
 	void urlChanged(const QString& url);
 };
 
-/* ------------------------------------------------------------------------- */
-
-struct QCef {
+struct FN_HIDE QCef {
 	virtual ~QCef() {}
 
 	virtual bool init_browser(void)          = 0;
@@ -59,42 +79,12 @@ struct QCef {
 	virtual void add_force_popup_url(const std::string& url, QObject* obj)     = 0;
 };
 
-static inline QCef* obs_browser_init_panel(void)
-{
-#ifdef _WIN32
-	void* lib = os_dlopen("obs-browser");
-#else
-	void* lib = os_dlopen("../obs-plugins/obs-browser");
-#endif
-	QCef* (*create_qcef)(void) = nullptr;
+// -------------------------------------------------------------------------------- //
 
-	if (!lib) {
-		return nullptr;
-	}
+namespace obs {
+	namespace browser {
+		FN_HIDE QCef* instance();
 
-	create_qcef = (decltype(create_qcef))os_dlsym(lib, "obs_browser_create_qcef");
-	if (!create_qcef)
-		return nullptr;
-
-	return create_qcef();
-}
-
-static inline int obs_browser_qcef_version(void)
-{
-#ifdef _WIN32
-	void* lib = os_dlopen("obs-browser");
-#else
-	void* lib = os_dlopen("../obs-plugins/obs-browser");
-#endif
-	int (*qcef_version)(void) = nullptr;
-
-	if (!lib) {
-		return 0;
-	}
-
-	qcef_version = (decltype(qcef_version))os_dlsym(lib, "obs_browser_qcef_version_export");
-	if (!qcef_version)
-		return 0;
-
-	return qcef_version();
-}
+		FN_HIDE int version();
+	} // namespace browser
+} // namespace obs
