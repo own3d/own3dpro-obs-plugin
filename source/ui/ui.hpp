@@ -19,6 +19,7 @@
 #include <memory>
 #include <obs-frontend-api.h>
 #include "ui-browser.hpp"
+#include "ui-dock-eventlist.hpp"
 #include "ui-download.hpp"
 
 namespace own3d::ui {
@@ -31,6 +32,9 @@ namespace own3d::ui {
 
 		own3d::ui::installer* _download;
 
+		own3d::ui::dock::eventlist* _eventlist_dock;
+		QAction*                    _eventlist_dock_action;
+
 		public:
 		~ui();
 		ui();
@@ -40,9 +44,7 @@ namespace own3d::ui {
 
 		void load();
 
-		void initialize_obs();
-
-		void initialize_browser();
+		void unload();
 
 		private slots:
 		; // Needed by some linters.

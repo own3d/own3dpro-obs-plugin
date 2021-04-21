@@ -599,6 +599,8 @@ set(PROJECT_PRIVATE_SOURCE
 	"source/ui/ui.cpp"
 	"source/ui/ui-browser.hpp"
 	"source/ui/ui-browser.cpp"
+	"source/ui/ui-dock-eventlist.hpp"
+	"source/ui/ui-dock-eventlist.cpp"
 	"source/ui/ui-download.hpp"
 	"source/ui/ui-download.cpp"
 	"source/util/utility.hpp"
