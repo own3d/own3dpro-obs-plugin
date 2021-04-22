@@ -1,6 +1,6 @@
 name: Build
 
-on: 
+on:
   push:
     branches-ignore:
       - 'l10n_master'
@@ -13,7 +13,7 @@ jobs:
     name: "Windows 64-bit"
     strategy:
       fail-fast: true
-      matrix: 
+      matrix:
         runner: [ windows-2019 ]
         include:
           - runner: windows-2019
@@ -71,7 +71,7 @@ jobs:
     - name: "libzip: Information"
       shell: bash
       id: libzip-info
-      run: |        
+      run: |
         cd "${PWD}/third-party/libzip/"
         version=$(git describe --tags --long --abbrev=8 HEAD)
         echo "libzip: ${version}"
@@ -120,7 +120,8 @@ jobs:
           -DDOWNLOAD_QT=ON \
           -DZLIB_INCLUDE=build/zlib/distrib/include \
           -DZLIB_LIBRARY=build/zlib/distrib/lib/zlib.lib \
-          -Dlibzip_DIR="${PWD}/build/libzip/distrib/lib/cmake/libzip"
+          -DLIBZIP_INCLUDE="build/libzip/distrib/include" \
+          -DLIBZIP_LIBRARY="build/libzip/distrib/lib/zip.lib"
     - name: "own3d: Build"
       shell: bash
       run: |
@@ -233,7 +234,7 @@ jobs:
     - name: "libzip: Information"
       shell: bash
       id: libzip-info
-      run: |        
+      run: |
         cd "${PWD}/third-party/libzip/"
         version=$(git describe --tags --long --abbrev=8 HEAD)
         echo "libzip: ${version}"
@@ -282,7 +283,8 @@ jobs:
           "-DCMAKE_PACKAGE_PREFIX=${PWD}/build/package" \
           -DZLIB_INCLUDE=build/zlib/distrib/include \
           -DZLIB_LIBRARY=build/zlib/distrib/lib/libz.a \
-          -Dlibzip_DIR="${PWD}/build/libzip/distrib/lib/cmake/libzip"
+          -DLIBZIP_INCLUDE="build/libzip/distrib/include" \
+          -DLIBZIP_LIBRARY="build/libzip/distrib/lib/libzip.a"
     - name: "own3d: Build"
       shell: bash
       run: |
@@ -301,7 +303,7 @@ jobs:
   macos:
     strategy:
       fail-fast: true
-      matrix: 
+      matrix:
         runner: [ macos-latest ]
         include:
           - runner: macos-latest
@@ -361,7 +363,7 @@ jobs:
     - name: "libzip: Information"
       shell: bash
       id: libzip-info
-      run: |        
+      run: |
         cd "${PWD}/third-party/libzip/"
         version=$(git describe --tags --long --abbrev=8 HEAD)
         echo "libzip: ${version}"
@@ -410,7 +412,8 @@ jobs:
           "-DCMAKE_PACKAGE_PREFIX=${PWD}/build/package" \
           -DZLIB_INCLUDE=build/zlib/distrib/include \
           -DZLIB_LIBRARY=build/zlib/distrib/lib/libz.a \
-          -Dlibzip_DIR="${PWD}/build/libzip/distrib/lib/cmake/libzip" \
+          -DLIBZIP_INCLUDE="build/libzip/distrib/include" \
+          -DLIBZIP_LIBRARY="build/libzip/distrib/lib/libzip.a"\
           -DQt5_DIR=/usr/local/Cellar/qt@5/5.15.2/lib/cmake/Qt5/
     - name: "own3d: Build"
       shell: bash
