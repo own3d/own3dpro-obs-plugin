@@ -172,10 +172,6 @@ set(CMAKE_MODULE_PATH
 
 # Include
 include("util")
-if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/cmake/Clang/Clang.cmake")
-	include("Clang")
-	set(HAVE_CLANG ON)
-endif()
 
 ################################################################################
 # Platform Setup
@@ -568,27 +564,10 @@ endif()
 # zlib
 set(ZLIB_LIBRARY "" CACHE FILEPATH "Path to zlib/zlib.lib")
 set(ZLIB_INCLUDE "" CACHE PATH "Path to zlib/include")
-cmake_policy(PUSH)
-cmake_policy(VERSION 2.6...3.18)
-add_library(ZLIB::ZLIB STATIC IMPORTED)
-set_target_properties(ZLIB::ZLIB PROPERTIES
-  INTERFACE_INCLUDE_DIRECTORIES "${ZLIB_INCLUDE}"
-  INTERFACE_LINK_LIBRARIES "\$<LINK_ONLY:${ZLIB_LIBRARY}>"
-  IMPORTED_LINK_INTERFACE_LANGUAGES "C"
-  IMPORTED_LINK_INTERFACE_LANGUAGES_RELEASE "C"
-  IMPORTED_LINK_INTERFACE_LANGUAGES_RELWITHDEBINFO "C"
-  IMPORTED_LINK_INTERFACE_LANGUAGES_MINSIZEREL "C"
-  IMPORTED_LINK_INTERFACE_LANGUAGES_DEBUG "C"
-  IMPORTED_LOCATION "${ZLIB_LIBRARY}"
-  IMPORTED_LOCATION_RELEASE "${ZLIB_LIBRARY}"
-  IMPORTED_LOCATION_RELWITHDEBINFO "${ZLIB_LIBRARY}"
-  IMPORTED_LOCATION_MINSIZEREL "${ZLIB_LIBRARY}"
-  IMPORTED_LOCATION_DEBUG "${ZLIB_LIBRARY}"
-)
-cmake_policy(POP)
 
 # libzip
-find_package(libzip REQUIRED)
+set(LIBZIP_LIBRARY "" CACHE FILEPATH "Path to libzip library.")
+set(LIBZIP_INCLUDE "" CACHE PATH "Path zo libzip's includes.")
 
 ################################################################################
 # Code
@@ -613,12 +592,15 @@ set(PROJECT_PRIVATE_SOURCE
 	"source/source-chat.cpp"
 	"source/source-labels.hpp"
 	"source/source-labels.cpp"
-	"source/obs/obs-browser-panel.hpp"
+	"source/obs/obs-browser.hpp"
+	"source/obs/obs-browser.cpp"
 	"source/obs/obs-source-factory.hpp"
 	"source/ui/ui.hpp"
 	"source/ui/ui.cpp"
 	"source/ui/ui-browser.hpp"
 	"source/ui/ui-browser.cpp"
+	"source/ui/ui-dock-eventlist.hpp"
+	"source/ui/ui-dock-eventlist.cpp"
 	"source/ui/ui-download.hpp"
 	"source/ui/ui-download.cpp"
 	"source/util/utility.hpp"
@@ -643,12 +625,15 @@ set(PROJECT_PRIVATE
 
 set(PROJECT_LIBRARIES
 	${CURL_LIBRARIES}
-	libzip::zip
+	${LIBZIP_LIBRARY}
+	${ZLIB_LIBRARY}
 )
 set(PROJECT_LIBRARIES_DELAYED )
 set(PROJECT_INCLUDE_DIRS
 	${CURL_INCLUDE_DIRS}
 	${libobs_INCLUDE_DIRS}
+	${LIBZIP_INCLUDE}
+	${ZLIB_INCLUDE}
 )
 set(PROJECT_DEFINES )
 
@@ -793,7 +778,6 @@ set_target_properties(
 	AUTOGEN_SOURCE_GROUP "Qt Files"
 )
 
-
 ################################################################################
 # C/C++ Compiler Adjustments
 ################################################################################
@@ -898,7 +882,7 @@ endif()
 # Installation
 ################################################################################
 
-if(${PropertyPrefix}OBS_NATIVE)
+if(${PREFIX}OBS_NATIVE)
 	install_obs_plugin_with_data(${PROJECT_NAME} data)
 else()
 	if(D_PLATFORM_WINDOWS)

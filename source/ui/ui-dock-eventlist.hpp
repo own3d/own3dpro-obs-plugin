@@ -1,5 +1,5 @@
 // Integration of the OWN3D service into OBS Studio
-// Copyright (C) 2020 own3d media GmbH <support@own3d.tv>
+// Copyright (C) 2021 own3d media GmbH <support@own3d.tv>
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -15,41 +15,26 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 #pragma once
-#include <QBoxLayout>
-#include <QDialog>
-#include <QFrame>
-#include <QUrl>
-#include <QUrlQuery>
+#include <QAction>
+#include <QCloseEvent>
+#include <QDockWidget>
+#include <QHBoxLayout>
 #include "obs/obs-browser.hpp"
 
-namespace own3d::ui {
-	class browser : public QDialog {
+namespace own3d::ui::dock {
+	class eventlist : public QDockWidget {
 		Q_OBJECT;
 
-		private:
-		QVBoxLayout* _layout;
-		QCef*        _cef;
-		QCefWidget*  _cef_widget;
+		QHBoxLayout* _layout;
+		QCefWidget*  _browser;
 
 		public:
-		~browser();
-		browser();
+		explicit eventlist();
+		~eventlist();
 
-		void show();
+		QAction* add_obs_dock();
 
 		protected:
-		void closeEvent(QCloseEvent*) override;
-
-		QUrl generate_url();
-
-		private Q_SLOTS:
-		; // Needed by some linters.
-		void url_changed(const QString& url);
-		void title_changed(const QString& title);
-
-		signals:
-		; // Needed by some linters.
-		void selected(const QUrl& download_url, const QString& name, const QString& hash);
-		void cancelled();
+		void closeEvent(QCloseEvent* event) override;
 	};
-} // namespace own3d::ui
+} // namespace own3d::ui::dock
