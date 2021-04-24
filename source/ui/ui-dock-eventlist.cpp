@@ -39,7 +39,7 @@ own3d::ui::dock::eventlist::eventlist() : QDockWidget(reinterpret_cast<QWidget*>
 
 	this->setWidget(_browser);
 	this->setLayout(_layout);
-	this->setMinimumSize(400, 500);
+	this->setMinimumSize(350, 170);
 	this->setMaximumSize(std::numeric_limits<int>::max(), std::numeric_limits<int>::max());
 	this->setWindowTitle(QString::fromUtf8(D_TRANSLATE(I18N_EVENTLIST.data())));
 	this->setObjectName("own3d::eventlist");
