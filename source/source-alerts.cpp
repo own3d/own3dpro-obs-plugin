@@ -71,7 +71,7 @@ own3d::source::alert_instance::alert_instance(obs_data_t* data, obs_source_t* se
 	// Set reasonable defaults.
 	_size.first  = 128;
 	_size.second = 128;
-	_url         = "https://own3d.tv/";
+	_url         = "https://own3d.pro/";
 
 	// If there are settings already, parse them.
 	if (data)

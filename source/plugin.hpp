@@ -26,16 +26,16 @@
 #undef strtoll
 
 #ifdef WIN32
-#define OWN3D_USER_AGENT "Own3d.tv OBS Plugin/" OWN3DTV_VERSION_STRING " (Windows)"
+#define OWN3D_USER_AGENT "OWN3D Pro OBS Plugin/" OWN3DTV_VERSION_STRING " (Windows)"
 #elif APPLE
-#define OWN3D_USER_AGENT "Own3d.tv OBS Plugin/" OWN3DTV_VERSION_STRING " (MacOS)"
+#define OWN3D_USER_AGENT "OWN3D Pro OBS Plugin/" OWN3DTV_VERSION_STRING " (MacOS)"
 #else
-#define OWN3D_USER_AGENT "Own3d.tv OBS Plugin/" OWN3DTV_VERSION_STRING " (Unix)"
+#define OWN3D_USER_AGENT "OWN3D Pro OBS Plugin/" OWN3DTV_VERSION_STRING " (Unix)"
 #endif
 
 // Common Global defines
 /// Log Functionality
-#define DLOG_PREFIX "[Own3d.TV]"
+#define DLOG_PREFIX "[OWN3D Pro]"
 #define DLOG_(level, ...) blog(level, DLOG_PREFIX " " __VA_ARGS__)
 #define DLOG_ERROR(...) DLOG_(LOG_ERROR, __VA_ARGS__)
 #define DLOG_WARNING(...) DLOG_(LOG_WARNING, __VA_ARGS__)
