@@ -28,9 +28,10 @@ QCef* obs::browser::instance()
 #ifdef _WIN32
 		library = os_dlopen("obs-browser");
 #else
-		library = os_dlopen("../obs-plugins/obs-browser");
+		library = os_dlopen("/usr/lib/obs-plugins/obs-browser");
 #endif
 		if (!library) {
+			throw std::runtime_error("os_dlopen(...) for obs-browser failed.");
 			return nullptr;
 		}
 	}
@@ -39,12 +40,14 @@ QCef* obs::browser::instance()
 		if (!qcef_create) {
 			qcef_create = reinterpret_cast<decltype(qcef_create)>(os_dlsym(library, "obs_browser_create_qcef"));
 			if (!qcef_create) {
+				throw std::runtime_error("qcef_create for obs-browser failed.");
 				return nullptr;
 			}
 		}
 
 		cef = qcef_create();
 		if (!cef) {
+			throw std::runtime_error("cef for obs-browser failed.");
 			return nullptr;
 		}
 	}
