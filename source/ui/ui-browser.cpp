@@ -46,7 +46,10 @@ own3d::ui::browser::browser() : QDialog(reinterpret_cast<QWidget*>(obs_frontend_
 	// Create Browser Widget
 	_cef = obs::browser::instance();
 	if (!_cef) {
+#ifdef WIN32
 		throw std::runtime_error("Failed to load obs-browser.dll.");
+#else
+		throw std::runtime_error("Failed to load obs-browser.so.");
 	}
 
 	// Create Widget
