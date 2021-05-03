@@ -21,8 +21,8 @@
 #include "plugin.hpp"
 #include "util/utility.hpp"
 
-constexpr std::string_view own3d_url            = "https://obs.own3d.tv/";
-constexpr std::string_view own3d_url_path_theme = "obs?machine_token=";
+constexpr std::string_view own3d_url            = "https://own3d.pro/";
+constexpr std::string_view own3d_url_path_theme = "obs?machine-token=";
 
 constexpr std::string_view I18N_THEME_BROWSER_TITLE = "ThemeBrowser.Title";
 
@@ -46,7 +46,11 @@ own3d::ui::browser::browser() : QDialog(reinterpret_cast<QWidget*>(obs_frontend_
 	// Create Browser Widget
 	_cef = obs::browser::instance();
 	if (!_cef) {
+#ifdef WIN32
 		throw std::runtime_error("Failed to load obs-browser.dll.");
+#else
+		throw std::runtime_error("Failed to load obs-browser.so.");
+#endif
 	}
 
 	// Create Widget
@@ -80,7 +84,7 @@ QUrl own3d::ui::browser::generate_url()
 	QUrl url;
 	url.setUrl(QString::fromStdString(own3d::get_web_endpoint("obs")));
 	QUrlQuery urlq;
-	urlq.addQueryItem("machine_token", QString::fromUtf8(own3d::get_unique_identifier().data()));
+	urlq.addQueryItem("machine-token", QString::fromUtf8(own3d::get_unique_identifier().data()));
 	urlq.addQueryItem("version", OWN3DTV_VERSION_STRING);
 	url.setQuery(urlq);
 	return url;

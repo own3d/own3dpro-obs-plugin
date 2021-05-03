@@ -95,7 +95,7 @@ own3d::source::chat_instance::chat_instance(obs_data_t* data, obs_source_t* self
 	// Set reasonable defaults.
 	_size.first  = 128;
 	_size.second = 128;
-	_url         = "https://own3d.tv/";
+	_url         = "https://own3d.pro/";
 
 	// If there are settings already, parse them.
 	if (data)
