@@ -172,6 +172,15 @@ bool own3d::is_sandbox()
 	return obs_data_get_bool(cfg.get(), KEY.data());
 }
 
+std::string own3d::get_sandbox_url() {
+	constexpr std::string_view KEY = "sandbox_url";
+	auto                       cfg = own3d::configuration::instance()->get();
+
+	std::string config_url = obs_data_get_string(cfg.get(), KEY.data());
+
+	return !config_url.empty() ? config_url : "https://sandbox.own3d.pro/";
+}
+
 std::string own3d::get_api_endpoint(std::string_view const args)
 {
 	constexpr std::string_view URL_ENDPOINT         = "api/v1/";
@@ -190,7 +199,7 @@ std::string own3d::get_api_endpoint(std::string_view const args)
 std::string own3d::get_web_endpoint(std::string_view const args /*= ""*/)
 {
 	constexpr std::string_view URL_ENDPOINT         = "https://own3d.pro/";
-	constexpr std::string_view URL_ENDPOINT_SANDBOX = "https://sandbox.own3d.pro/";
+	std::string_view           URL_ENDPOINT_SANDBOX = get_sandbox_url();
 
 	std::vector<char> buffer(65535);
 	if (is_sandbox()) {
