@@ -20,10 +20,11 @@
 #include <string_view>
 #include "plugin.hpp"
 
-static constexpr std::string_view I18N_EVENTLIST = "Dock.EventList";
+constexpr std::string_view I18N_EVENTLIST = "Dock.EventList";
 
-static constexpr std::string_view CFG_EVENTLIST          = "dock.eventlist";
-static constexpr std::string_view CFG_EVENTLIST_FIRSTRUN = "dock.eventlist.firstrun";
+constexpr std::string_view CFG_EVENTLIST          = "dock.eventlist";
+constexpr std::string_view CFG_EVENTLIST_FIRSTRUN = "dock.eventlist.firstrun";
+constexpr std::string_view CFG_EVENTLIST_FLOATING = "dock.eventlist.floating";
 
 own3d::ui::dock::eventlist::eventlist() : QDockWidget(reinterpret_cast<QWidget*>(obs_frontend_get_main_window()))
 {
@@ -31,30 +32,33 @@ own3d::ui::dock::eventlist::eventlist() : QDockWidget(reinterpret_cast<QWidget*>
 	std::string url   = own3d::get_web_endpoint("popout/0/event-list?machine-token=" + token);
 
 	_browser = obs::browser::instance()->create_widget(this, url);
+	_browser->setMinimumSize(300, 170);
 
-	_layout = new QHBoxLayout(this);
-	_layout->setContentsMargins(0, 0, 0, 0);
-	_layout->setSpacing(0);
-	_layout->addWidget(_browser);
-
-	this->setWidget(_browser);
-	this->setLayout(_layout);
-	this->setMinimumSize(400, 500);
-	this->setMaximumSize(std::numeric_limits<int>::max(), std::numeric_limits<int>::max());
-	this->setWindowTitle(QString::fromUtf8(D_TRANSLATE(I18N_EVENTLIST.data())));
-	this->setObjectName("own3d::eventlist");
+	setWidget(_browser);
+	setMaximumSize(std::numeric_limits<int16_t>::max(), std::numeric_limits<int16_t>::max());
+	setWindowTitle(QString::fromUtf8(D_TRANSLATE(I18N_EVENTLIST.data())));
+	setObjectName("own3d::eventlist");
 
 	// Dock functionality
-	this->setFeatures(QDockWidget::DockWidgetClosable | QDockWidget::DockWidgetMovable
-					  | QDockWidget::DockWidgetFloatable);
-	this->setAllowedAreas(Qt::AllDockWidgetAreas);
+	setFeatures(QDockWidget::DockWidgetClosable | QDockWidget::DockWidgetMovable | QDockWidget::DockWidgetFloatable);
+	setAllowedAreas(Qt::AllDockWidgetAreas);
 
 	{ // Check if this is the first time the user runs this plug-in.
 		auto cfg  = own3d::configuration::instance();
 		auto data = cfg->get();
 
 		obs_data_set_default_bool(data.get(), CFG_EVENTLIST_FIRSTRUN.data(), true);
+		obs_data_set_default_bool(data.get(), CFG_EVENTLIST_FLOATING.data(), true);
+
+		setFloating(obs_data_get_bool(data.get(), CFG_EVENTLIST_FLOATING.data()));
 	}
+
+	// Connect Signals
+	connect(this, &QDockWidget::visibilityChanged, this, &eventlist::on_visibilityChanged);
+	connect(this, &QDockWidget::topLevelChanged, this, &eventlist::on_topLevelChanged);
+
+	// Hide initially.
+	hide();
 }
 
 own3d::ui::dock::eventlist::~eventlist() {}
@@ -75,7 +79,6 @@ QAction* own3d::ui::dock::eventlist::add_obs_dock()
 		auto data = cfg->get();
 
 		if (obs_data_get_bool(data.get(), CFG_EVENTLIST_FIRSTRUN.data())) {
-			this->hide();
 			obs_data_set_bool(data.get(), CFG_EVENTLIST_FIRSTRUN.data(), false);
 			cfg->save();
 		}
@@ -86,5 +89,16 @@ QAction* own3d::ui::dock::eventlist::add_obs_dock()
 
 void own3d::ui::dock::eventlist::closeEvent(QCloseEvent* event)
 {
-	this->hide();
+	event->ignore();
+	hide();
+}
+
+void own3d::ui::dock::eventlist::on_visibilityChanged(bool visible) {}
+
+void own3d::ui::dock::eventlist::on_topLevelChanged(bool topLevel)
+{
+	auto cfg  = own3d::configuration::instance();
+	auto data = cfg->get();
+	obs_data_set_bool(data.get(), CFG_EVENTLIST_FLOATING.data(), topLevel);
+	cfg->save();
 }

@@ -25,8 +25,7 @@ namespace own3d::ui::dock {
 	class eventlist : public QDockWidget {
 		Q_OBJECT;
 
-		QHBoxLayout* _layout;
-		QCefWidget*  _browser;
+		QCefWidget* _browser;
 
 		public:
 		explicit eventlist();
@@ -36,5 +35,9 @@ namespace own3d::ui::dock {
 
 		protected:
 		void closeEvent(QCloseEvent* event) override;
+
+		protected Q_SLOTS:
+		void on_visibilityChanged(bool visible);
+		void on_topLevelChanged(bool topLevel);
 	};
 } // namespace own3d::ui::dock
