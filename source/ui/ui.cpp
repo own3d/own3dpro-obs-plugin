@@ -53,13 +53,24 @@ void own3d::ui::ui::load()
 	}
 
 	{ // Event List Dock
-		_eventlist_dock        = new own3d::ui::dock::eventlist();
+		_eventlist_dock        = QSharedPointer<own3d::ui::dock::eventlist>::create();
 		_eventlist_dock_action = _eventlist_dock->add_obs_dock();
+	}
+
+	{ // Event List Dock
+		_chat_dock        = QSharedPointer<own3d::ui::dock::chat>::create();
+		_chat_dock_action = _chat_dock->add_obs_dock();
 	}
 }
 
 void own3d::ui::ui::unload()
 {
+	{ // Chat Dock
+		_chat_dock->deleteLater();
+		_chat_dock        = nullptr;
+		_chat_dock_action = nullptr;
+	}
+
 	{ // Event List Dock
 		_eventlist_dock->deleteLater();
 		_eventlist_dock        = nullptr;
