@@ -15,9 +15,14 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 #include "ui.hpp"
+#include <QMainWindow>
 #include "plugin.hpp"
 
+#include <obs-frontend-api.h>
+
 static constexpr std::string_view I18N_THEMEBROWSER_MENU = "Menu.ThemeBrowser";
+
+static constexpr std::string_view CFG_PRIVACYPOLICY = "privacypolicy";
 
 inline void qt_init_resource()
 {
@@ -35,10 +40,20 @@ own3d::ui::ui::~ui()
 	qt_cleanup_resource();
 }
 
-own3d::ui::ui::ui() : _action(), _theme_browser(), _download(), _eventlist_dock(), _eventlist_dock_action()
+own3d::ui::ui::ui()
+	: _gdpr(), _privacypolicy(false), _action(), _theme_browser(), _download(), _eventlist_dock(),
+	  _eventlist_dock_action()
 {
 	qt_init_resource();
 	obs_frontend_add_event_callback(obs_event_handler, this);
+
+	{ // Load Configuration
+		auto cfg = own3d::configuration::instance();
+
+		// GDPR Flag
+		obs_data_set_default_bool(cfg->get().get(), CFG_PRIVACYPOLICY.data(), false);
+		_privacypolicy = obs_data_get_bool(cfg->get().get(), CFG_PRIVACYPOLICY.data());
+	}
 }
 
 void own3d::ui::ui::obs_event_handler(obs_frontend_event event, void* private_data)
@@ -53,6 +68,12 @@ void own3d::ui::ui::obs_event_handler(obs_frontend_event event, void* private_da
 
 void own3d::ui::ui::load()
 {
+	{ // GDPR
+		_gdpr = QSharedPointer<own3d::ui::gdpr>::create(reinterpret_cast<QMainWindow*>(obs_frontend_get_main_window()));
+		_gdpr->connect(_gdpr.get(), &own3d::ui::gdpr::accepted, this, &own3d::ui::ui::on_gdpr_accept);
+		_gdpr->connect(_gdpr.get(), &own3d::ui::gdpr::declined, this, &own3d::ui::ui::on_gdpr_decline);
+	}
+
 	{ // OWN3D Menu
 		_action =
 			reinterpret_cast<QAction*>(obs_frontend_add_tools_menu_qaction(D_TRANSLATE(I18N_THEMEBROWSER_MENU.data())));
@@ -67,6 +88,11 @@ void own3d::ui::ui::load()
 	{ // Event List Dock
 		_eventlist_dock        = new own3d::ui::dock::eventlist();
 		_eventlist_dock_action = _eventlist_dock->add_obs_dock();
+	}
+
+	// Verify that the user has accepted the privacy policy.
+	if (!_privacypolicy) {
+		_gdpr->show();
 	}
 }
 
@@ -87,6 +113,35 @@ void own3d::ui::ui::unload()
 	{ // OWN3D Menu
 		_action = nullptr;
 	}
+
+	if (_gdpr) { // GDPR
+		_gdpr->deleteLater();
+		_gdpr.reset();
+	}
+}
+
+void own3d::ui::ui::on_gdpr_accept()
+{
+	_gdpr->close();
+	_gdpr.reset();
+	_privacypolicy = true;
+
+	auto cfg = own3d::configuration::instance();
+	obs_data_set_bool(cfg->get().get(), CFG_PRIVACYPOLICY.data(), _privacypolicy);
+	cfg->save();
+}
+
+void own3d::ui::ui::on_gdpr_decline()
+{
+	_gdpr->close();
+	_gdpr.reset();
+	_privacypolicy = false;
+
+	auto cfg = own3d::configuration::instance();
+	obs_data_set_bool(cfg->get().get(), CFG_PRIVACYPOLICY.data(), _privacypolicy);
+	cfg->save();
+
+	static_cast<QMainWindow*>(obs_frontend_get_main_window())->close();
 }
 
 void own3d::ui::ui::own3d_action_triggered(bool)
