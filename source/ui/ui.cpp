@@ -15,9 +15,12 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 #include "ui.hpp"
+#include <QMainWindow>
 #include "plugin.hpp"
 
 static constexpr std::string_view I18N_THEMEBROWSER_MENU = "Menu.ThemeBrowser";
+
+static constexpr std::string_view CFG_GDPR = "gdpr";
 
 inline void qt_init_resource()
 {
@@ -35,10 +38,20 @@ own3d::ui::ui::~ui()
 	qt_cleanup_resource();
 }
 
-own3d::ui::ui::ui() : _action(), _theme_browser(), _download(), _eventlist_dock(), _eventlist_dock_action()
+own3d::ui::ui::ui()
+	: _gdpr(), _gdpr_accepted(false), _action(), _theme_browser(), _download(), _eventlist_dock(),
+	  _eventlist_dock_action()
 {
 	qt_init_resource();
 	obs_frontend_add_event_callback(obs_event_handler, this);
+
+	{ // Load Configuration
+		auto cfg = own3d::configuration::instance();
+
+		// GDPR Flag
+		obs_data_set_default_bool(cfg->get().get(), CFG_GDPR.data(), false);
+		_gdpr_accepted = obs_data_get_bool(cfg->get().get(), CFG_GDPR.data());
+	}
 }
 
 void own3d::ui::ui::obs_event_handler(obs_frontend_event event, void* private_data)
@@ -53,6 +66,15 @@ void own3d::ui::ui::obs_event_handler(obs_frontend_event event, void* private_da
 
 void own3d::ui::ui::load()
 {
+	{ // GDPR
+		if (!_gdpr_accepted) {
+			_gdpr = QSharedPointer<own3d::ui::gdpr>::create();
+			_gdpr->connect(_gdpr.get(), &own3d::ui::gdpr::accepted, this, &own3d::ui::ui::on_gdpr_accept);
+			_gdpr->connect(_gdpr.get(), &own3d::ui::gdpr::declined, this, &own3d::ui::ui::on_gdpr_decline);
+			_gdpr->show();
+		}
+	}
+
 	{ // OWN3D Menu
 		_action =
 			reinterpret_cast<QAction*>(obs_frontend_add_tools_menu_qaction(D_TRANSLATE(I18N_THEMEBROWSER_MENU.data())));
@@ -87,6 +109,35 @@ void own3d::ui::ui::unload()
 	{ // OWN3D Menu
 		_action = nullptr;
 	}
+
+	{ // GDPR
+		_gdpr->deleteLater();
+		_gdpr.reset();
+	}
+}
+
+void own3d::ui::ui::on_gdpr_accept()
+{
+	_gdpr->close();
+	_gdpr.reset();
+	_gdpr_accepted = true;
+
+	auto cfg = own3d::configuration::instance();
+	obs_data_set_bool(cfg->get().get(), CFG_GDPR.data(), _gdpr_accepted);
+	cfg->save();
+}
+
+void own3d::ui::ui::on_gdpr_decline()
+{
+	_gdpr->close();
+	_gdpr.reset();
+	_gdpr_accepted = false;
+
+	auto cfg = own3d::configuration::instance();
+	obs_data_set_bool(cfg->get().get(), CFG_GDPR.data(), _gdpr_accepted);
+	cfg->save();
+
+	static_cast<QMainWindow*>(obs_frontend_get_main_window())->close();
 }
 
 void own3d::ui::ui::own3d_action_triggered(bool)
