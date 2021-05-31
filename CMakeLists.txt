@@ -613,6 +613,7 @@ set(PROJECT_PRIVATE_SOURCE
 	"source/util/zip.cpp"
 )
 set(PROJECT_UI
+	"ui/own3d.qrc"
 	"ui/theme-download.ui"
 )
 set(PROJECT_PRIVATE

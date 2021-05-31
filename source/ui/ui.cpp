@@ -19,13 +19,25 @@
 
 static constexpr std::string_view I18N_THEMEBROWSER_MENU = "Menu.ThemeBrowser";
 
+inline void qt_init_resource()
+{
+	Q_INIT_RESOURCE(own3d);
+}
+
+inline void qt_cleanup_resource()
+{
+	Q_CLEANUP_RESOURCE(own3d);
+}
+
 own3d::ui::ui::~ui()
 {
 	obs_frontend_remove_event_callback(obs_event_handler, this);
+	qt_cleanup_resource();
 }
 
 own3d::ui::ui::ui() : _action(), _theme_browser(), _download(), _eventlist_dock(), _eventlist_dock_action()
 {
+	qt_init_resource();
 	obs_frontend_add_event_callback(obs_event_handler, this);
 }
 
