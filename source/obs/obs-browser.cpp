@@ -25,14 +25,12 @@ QCef* obs::browser::instance()
 	static QCef* cef                  = nullptr;
 
 	if (!library) {
-#ifdef _WIN32
-		library = os_dlopen("obs-browser");
-#else
-		library = os_dlopen("../obs-plugins/obs-browser");
-#endif
-		if (!library) {
+		obs_module_t *browserModule = obs_get_module("obs-browser");
+
+		if (!browserModule)
 			return nullptr;
-		}
+
+		library = obs_get_module_lib(browserModule);
 	}
 
 	if (!cef) {
