@@ -23,12 +23,16 @@
 #include "ui-dock-chat.hpp"
 #include "ui-dock-eventlist.hpp"
 #include "ui-download.hpp"
+#include "ui-gdpr.hpp"
 
 namespace own3d::ui {
 	class ui : public QObject {
 		Q_OBJECT;
 
 		private:
+		QSharedPointer<own3d::ui::gdpr> _gdpr;
+		bool                            _gdpr_accepted;
+
 		QAction*            _action;
 		own3d::ui::browser* _theme_browser;
 
@@ -52,6 +56,10 @@ namespace own3d::ui {
 
 		private slots:
 		; // Needed by some linters.
+		void on_gdpr_accept();
+
+		void on_gdpr_decline();
+
 		void own3d_action_triggered(bool);
 
 		void own3d_theme_selected(const QUrl& download_url, const QString& name, const QString& hash);

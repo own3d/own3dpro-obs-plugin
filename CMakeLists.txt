@@ -597,6 +597,8 @@ set(PROJECT_PRIVATE_SOURCE
 	"source/obs/obs-source-factory.hpp"
 	"source/ui/ui.hpp"
 	"source/ui/ui.cpp"
+	"source/ui/ui-gdpr.hpp"
+	"source/ui/ui-gdpr.cpp"
 	"source/ui/ui-browser.hpp"
 	"source/ui/ui-browser.cpp"
 	"source/ui/ui-dock-chat.hpp"
@@ -615,6 +617,8 @@ set(PROJECT_PRIVATE_SOURCE
 	"source/util/zip.cpp"
 )
 set(PROJECT_UI
+	"ui/own3d.qrc"
+	"ui/gdpr.ui"
 	"ui/theme-download.ui"
 )
 set(PROJECT_PRIVATE
