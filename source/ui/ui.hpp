@@ -16,6 +16,7 @@
 
 #pragma once
 #include <QAction>
+#include <QMenu>
 #include <memory>
 #include <obs-frontend-api.h>
 #include "ui-browser.hpp"
@@ -31,7 +32,10 @@ namespace own3d::ui {
 		QSharedPointer<own3d::ui::gdpr> _gdpr;
 		bool                            _privacypolicy;
 
-		QAction*            _action;
+		QMenu*   _menu;
+		QAction* _menu_action;
+		QAction* _theme_action;
+
 		own3d::ui::browser* _theme_browser;
 
 		own3d::ui::installer* _download;
@@ -56,7 +60,7 @@ namespace own3d::ui {
 
 		void on_gdpr_decline();
 
-		void own3d_action_triggered(bool);
+		void menu_theme_triggered(bool);
 
 		void own3d_theme_selected(const QUrl& download_url, const QString& name, const QString& hash);
 

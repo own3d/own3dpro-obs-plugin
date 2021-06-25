@@ -16,10 +16,12 @@
 
 #include "ui.hpp"
 #include <QMainWindow>
+#include <QMenuBar>
 #include "plugin.hpp"
 
 #include <obs-frontend-api.h>
 
+static constexpr std::string_view I18N_MENU              = "Menu";
 static constexpr std::string_view I18N_THEMEBROWSER_MENU = "Menu.ThemeBrowser";
 
 static constexpr std::string_view CFG_PRIVACYPOLICY = "privacypolicy";
@@ -41,8 +43,8 @@ own3d::ui::ui::~ui()
 }
 
 own3d::ui::ui::ui()
-	: _gdpr(), _privacypolicy(false), _action(), _theme_browser(), _download(), _eventlist_dock(),
-	  _eventlist_dock_action()
+	: _gdpr(), _privacypolicy(false), _menu(), _menu_action(), _theme_action(), _theme_browser(), _download(),
+	  _eventlist_dock(), _eventlist_dock_action()
 {
 	qt_init_resource();
 	obs_frontend_add_event_callback(obs_event_handler, this);
@@ -75,9 +77,29 @@ void own3d::ui::ui::load()
 	}
 
 	{ // OWN3D Menu
-		_action =
-			reinterpret_cast<QAction*>(obs_frontend_add_tools_menu_qaction(D_TRANSLATE(I18N_THEMEBROWSER_MENU.data())));
-		connect(_action, &QAction::triggered, this, &own3d::ui::ui::own3d_action_triggered);
+		QMainWindow* main_widget = reinterpret_cast<QMainWindow*>(obs_frontend_get_main_window());
+
+		_menu = new QMenu(main_widget);
+
+		// Add Theme/Design Browser/Store
+		_theme_action = _menu->addAction(QString::fromUtf8(D_TRANSLATE(I18N_THEMEBROWSER_MENU.data())));
+		connect(_theme_action, &QAction::triggered, this, &own3d::ui::ui::menu_theme_triggered);
+
+		{ // Add an actual Menu entry.
+			_menu_action = new QAction(main_widget);
+			_menu_action->setMenuRole(QAction::NoRole);
+			_menu_action->setMenu(_menu);
+			_menu_action->setText(QString::fromUtf8(D_TRANSLATE(I18N_MENU.data())));
+
+			// Insert the new menu right before the Help menu.
+			QList<QMenu*> obs_menus =
+				main_widget->menuBar()->findChildren<QMenu*>(QString(), Qt::FindDirectChildrenOnly);
+			if (QMenu* help_menu = obs_menus.at(1); help_menu) {
+				main_widget->menuBar()->insertAction(help_menu->menuAction(), _menu_action);
+			} else {
+				main_widget->menuBar()->addAction(_menu_action);
+			}
+		}
 	}
 
 	{ // Create Theme Browser.
@@ -110,8 +132,10 @@ void own3d::ui::ui::unload()
 		_theme_browser = nullptr;
 	}
 
-	{ // OWN3D Menu
-		_action = nullptr;
+	if (_menu) { // OWN3D Menu
+		_theme_action->deleteLater();
+		_menu_action->deleteLater();
+		_menu->deleteLater();
 	}
 
 	if (_gdpr) { // GDPR
@@ -144,7 +168,7 @@ void own3d::ui::ui::on_gdpr_decline()
 	static_cast<QMainWindow*>(obs_frontend_get_main_window())->close();
 }
 
-void own3d::ui::ui::own3d_action_triggered(bool)
+void own3d::ui::ui::menu_theme_triggered(bool)
 {
 	_theme_browser->show();
 }
