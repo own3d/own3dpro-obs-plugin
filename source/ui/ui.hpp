@@ -30,6 +30,8 @@ namespace own3d::ui {
 		Q_OBJECT;
 
 		private:
+		QTranslator* _translator;
+
 		QSharedPointer<own3d::ui::gdpr> _gdpr;
 		bool                            _privacypolicy;
 

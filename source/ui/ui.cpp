@@ -17,6 +17,7 @@
 #include "ui.hpp"
 #include <QMainWindow>
 #include <QMenuBar>
+#include <QTranslator>
 #include "plugin.hpp"
 
 #include <obs-frontend-api.h>
@@ -37,6 +38,31 @@ inline void qt_cleanup_resource()
 	Q_CLEANUP_RESOURCE(own3d);
 }
 
+class own3d_translator : public QTranslator {
+	public:
+	own3d_translator(QObject* parent = nullptr) {}
+	~own3d_translator() {}
+
+	virtual QString translate(const char* context, const char* sourceText, const char* disambiguation = nullptr,
+							  int n = -1) const override
+	{
+		static constexpr std::string_view prefix = "OWN3D::";
+
+		if (disambiguation) {
+			std::string_view view{disambiguation};
+			if (view.substr(0, prefix.length()) == prefix) {
+				return QString::fromUtf8(D_TRANSLATE(view.substr(prefix.length()).data()));
+			}
+		} else if (sourceText) {
+			std::string_view view{sourceText};
+			if (view.substr(0, prefix.length()) == prefix) {
+				return QString::fromUtf8(D_TRANSLATE(view.substr(prefix.length()).data()));
+			}
+		}
+		return QString();
+	}
+};
+
 own3d::ui::ui::~ui()
 {
 	obs_frontend_remove_event_callback(obs_event_handler, this);
@@ -44,8 +70,8 @@ own3d::ui::ui::~ui()
 }
 
 own3d::ui::ui::ui()
-	: _gdpr(), _privacypolicy(false), _menu(), _menu_action(), _theme_action(), _update_action(), _theme_browser(),
-	  _download(), _eventlist_dock(), _eventlist_dock_action()
+	: _translator(), _gdpr(), _privacypolicy(false), _menu(), _menu_action(), _theme_action(), _update_action(),
+	  _theme_browser(), _download(), _eventlist_dock(), _eventlist_dock_action()
 {
 	qt_init_resource();
 	obs_frontend_add_event_callback(obs_event_handler, this);
@@ -71,6 +97,9 @@ void own3d::ui::ui::obs_event_handler(obs_frontend_event event, void* private_da
 
 void own3d::ui::ui::load()
 {
+	// Add translator.
+	_translator = static_cast<QTranslator*>(new own3d_translator(this));
+	QCoreApplication::installTranslator(_translator);
 	{ // GDPR
 		_gdpr = QSharedPointer<own3d::ui::gdpr>::create(reinterpret_cast<QMainWindow*>(obs_frontend_get_main_window()));
 		_gdpr->connect(_gdpr.get(), &own3d::ui::gdpr::accepted, this, &own3d::ui::ui::on_gdpr_accept);
@@ -161,6 +190,9 @@ void own3d::ui::ui::unload()
 		_gdpr->deleteLater();
 		_gdpr.reset();
 	}
+
+	// Remove translator.
+	QCoreApplication::removeTranslator(_translator);
 }
 
 void own3d::ui::ui::on_gdpr_accept()
