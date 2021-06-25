@@ -23,6 +23,7 @@
 #include "ui-dock-eventlist.hpp"
 #include "ui-download.hpp"
 #include "ui-gdpr.hpp"
+#include "ui-updater.hpp"
 
 namespace own3d::ui {
 	class ui : public QObject {
@@ -35,6 +36,9 @@ namespace own3d::ui {
 		QMenu*   _menu;
 		QAction* _menu_action;
 		QAction* _theme_action;
+		QAction* _update_action;
+
+		QSharedPointer<own3d::ui::updater> _updater;
 
 		own3d::ui::browser* _theme_browser;
 
@@ -61,6 +65,8 @@ namespace own3d::ui {
 		void on_gdpr_decline();
 
 		void menu_theme_triggered(bool);
+
+		void menu_update_triggered(bool);
 
 		void own3d_theme_selected(const QUrl& download_url, const QString& name, const QString& hash);
 

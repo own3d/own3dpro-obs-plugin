@@ -605,6 +605,8 @@ set(PROJECT_PRIVATE_SOURCE
 	"source/ui/ui-dock-eventlist.cpp"
 	"source/ui/ui-download.hpp"
 	"source/ui/ui-download.cpp"
+	"source/ui/ui-updater.hpp"
+	"source/ui/ui-updater.cpp"
 	"source/util/utility.hpp"
 	"source/util/utility.cpp"
 	"source/util/curl.hpp"
@@ -692,6 +694,13 @@ if(D_PLATFORM_WINDOWS)
 		NOMDI
 		NOINOUT
 	)
+endif()
+
+if(NOT EXISTS "${PROJECT_SOURCE_DIR}/third-party/nlohmann-json/single_include")
+	message(FATAL_ERROR "${LOGPREFIX} Please make sure to update git submodules to their latest supported version.")
+	return()
+else()
+	list(APPEND PROJECT_INCLUDE_DIRS "${PROJECT_SOURCE_DIR}/third-party/nlohmann-json/single_include")
 endif()
 
 source_group(TREE "${PROJECT_SOURCE_DIR}/data" PREFIX "Data Files" FILES ${PROJECT_DATA})

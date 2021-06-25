@@ -21,8 +21,9 @@
 
 #include <obs-frontend-api.h>
 
-static constexpr std::string_view I18N_MENU              = "Menu";
-static constexpr std::string_view I18N_THEMEBROWSER_MENU = "Menu.ThemeBrowser";
+static constexpr std::string_view I18N_MENU                 = "Menu";
+static constexpr std::string_view I18N_THEMEBROWSER_MENU    = "Menu.ThemeBrowser";
+static constexpr std::string_view I18N_MENU_CHECKFORUPDATES = "Menu.CheckForUpdates";
 
 static constexpr std::string_view CFG_PRIVACYPOLICY = "privacypolicy";
 
@@ -43,8 +44,8 @@ own3d::ui::ui::~ui()
 }
 
 own3d::ui::ui::ui()
-	: _gdpr(), _privacypolicy(false), _menu(), _menu_action(), _theme_action(), _theme_browser(), _download(),
-	  _eventlist_dock(), _eventlist_dock_action()
+	: _gdpr(), _privacypolicy(false), _menu(), _menu_action(), _theme_action(), _update_action(), _theme_browser(),
+	  _download(), _eventlist_dock(), _eventlist_dock_action()
 {
 	qt_init_resource();
 	obs_frontend_add_event_callback(obs_event_handler, this);
@@ -76,6 +77,11 @@ void own3d::ui::ui::load()
 		_gdpr->connect(_gdpr.get(), &own3d::ui::gdpr::declined, this, &own3d::ui::ui::on_gdpr_decline);
 	}
 
+	{ // Updater
+		_updater =
+			QSharedPointer<own3d::ui::updater>::create(reinterpret_cast<QMainWindow*>(obs_frontend_get_main_window()));
+	}
+
 	{ // OWN3D Menu
 		QMainWindow* main_widget = reinterpret_cast<QMainWindow*>(obs_frontend_get_main_window());
 
@@ -84,6 +90,10 @@ void own3d::ui::ui::load()
 		// Add Theme/Design Browser/Store
 		_theme_action = _menu->addAction(QString::fromUtf8(D_TRANSLATE(I18N_THEMEBROWSER_MENU.data())));
 		connect(_theme_action, &QAction::triggered, this, &own3d::ui::ui::menu_theme_triggered);
+
+		// Add Updater
+		_update_action = _menu->addAction(D_TRANSLATE(I18N_MENU_CHECKFORUPDATES.data()));
+		connect(_update_action, &QAction::triggered, this, &own3d::ui::ui::menu_update_triggered);
 
 		{ // Add an actual Menu entry.
 			_menu_action = new QAction(main_widget);
@@ -115,6 +125,9 @@ void own3d::ui::ui::load()
 	// Verify that the user has accepted the privacy policy.
 	if (!_privacypolicy) {
 		_gdpr->show();
+	} else {
+		// If the user already agreed to the privacy policy, immediately check for updates.
+		_updater->check();
 	}
 }
 
@@ -133,9 +146,15 @@ void own3d::ui::ui::unload()
 	}
 
 	if (_menu) { // OWN3D Menu
+		_update_action->deleteLater();
 		_theme_action->deleteLater();
 		_menu_action->deleteLater();
 		_menu->deleteLater();
+	}
+
+	if (_updater) { // Updater
+		_updater->deleteLater();
+		_updater.reset();
 	}
 
 	if (_gdpr) { // GDPR
@@ -153,6 +172,9 @@ void own3d::ui::ui::on_gdpr_accept()
 	auto cfg = own3d::configuration::instance();
 	obs_data_set_bool(cfg->get().get(), CFG_PRIVACYPOLICY.data(), _privacypolicy);
 	cfg->save();
+
+	// Check for new updates.
+	_updater->check();
 }
 
 void own3d::ui::ui::on_gdpr_decline()
@@ -171,6 +193,12 @@ void own3d::ui::ui::on_gdpr_decline()
 void own3d::ui::ui::menu_theme_triggered(bool)
 {
 	_theme_browser->show();
+}
+
+void own3d::ui::ui::menu_update_triggered(bool)
+{
+	if (_updater)
+		_updater->check();
 }
 
 std::shared_ptr<own3d::ui::ui> own3d::ui::ui::_instance = nullptr;
