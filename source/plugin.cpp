@@ -249,11 +249,11 @@ static std::string request_unique_identifier()
 		}
 		{
 			auto j_version       = nlohmann::json::array();
-			j_version[0]         = OWN3DTV_VERSION_STRING;
-			j_version[1]         = OWN3DTV_VERSION_MAJOR;
-			j_version[2]         = OWN3DTV_VERSION_MINOR;
-			j_version[3]         = OWN3DTV_VERSION_PATCH;
-			j_version[4]         = OWN3DTV_COMMIT;
+			j_version[0]         = OWN3D_VERSION_STRING;
+			j_version[1]         = OWN3D_VERSION_MAJOR;
+			j_version[2]         = OWN3D_VERSION_MINOR;
+			j_version[3]         = OWN3D_VERSION_PATCH;
+			j_version[4]         = OWN3D_COMMIT;
 			j_versions["plugin"] = j_version;
 		}
 		j_["versions"] = j_versions;
