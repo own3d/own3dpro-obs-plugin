@@ -168,7 +168,7 @@ void own3d::ui::ui::unload()
 		_eventlist_dock_action = nullptr;
 	}
 
-	{ // Theme Browser
+	if (_theme_browser) { // Theme Browser
 		_theme_browser->deleteLater();
 		disconnect(_theme_browser, &own3d::ui::browser::selected, this, &own3d::ui::ui::own3d_theme_selected);
 		_theme_browser = nullptr;
