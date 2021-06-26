@@ -15,6 +15,7 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 #include "ui.hpp"
+#include <QDesktopServices>
 #include <QMainWindow>
 #include <QMenuBar>
 #include <QTranslator>
@@ -25,6 +26,7 @@
 static constexpr std::string_view I18N_MENU                 = "Menu";
 static constexpr std::string_view I18N_THEMEBROWSER_MENU    = "Menu.ThemeBrowser";
 static constexpr std::string_view I18N_MENU_CHECKFORUPDATES = "Menu.CheckForUpdates";
+static constexpr std::string_view I18N_MENU_ABOUT           = "Menu.About";
 
 static constexpr std::string_view CFG_PRIVACYPOLICY = "privacypolicy";
 
@@ -71,7 +73,7 @@ own3d::ui::ui::~ui()
 
 own3d::ui::ui::ui()
 	: _translator(), _gdpr(), _privacypolicy(false), _menu(), _menu_action(), _theme_action(), _update_action(),
-	  _theme_browser(), _download(), _eventlist_dock(), _eventlist_dock_action()
+	  _about_action(), _theme_browser(), _download(), _eventlist_dock(), _eventlist_dock_action()
 {
 	qt_init_resource();
 	obs_frontend_add_event_callback(obs_event_handler, this);
@@ -120,9 +122,16 @@ void own3d::ui::ui::load()
 		_theme_action = _menu->addAction(QString::fromUtf8(D_TRANSLATE(I18N_THEMEBROWSER_MENU.data())));
 		connect(_theme_action, &QAction::triggered, this, &own3d::ui::ui::menu_theme_triggered);
 
+		_menu->addSeparator();
+
 		// Add Updater
 		_update_action = _menu->addAction(D_TRANSLATE(I18N_MENU_CHECKFORUPDATES.data()));
 		connect(_update_action, &QAction::triggered, this, &own3d::ui::ui::menu_update_triggered);
+
+		// Add About
+		_about_action = _menu->addAction(D_TRANSLATE(I18N_MENU_ABOUT.data()));
+		_about_action->setMenuRole(QAction::NoRole);
+		connect(_about_action, &QAction::triggered, this, &own3d::ui::ui::menu_about_triggered);
 
 		{ // Add an actual Menu entry.
 			_menu_action = new QAction(main_widget);
@@ -232,6 +241,11 @@ void own3d::ui::ui::menu_update_triggered(bool)
 {
 	if (_updater)
 		_updater->check();
+}
+
+void own3d::ui::ui::menu_about_triggered(bool)
+{
+	QDesktopServices::openUrl(QUrl(QString::fromUtf8("https://own3d.pro")));
 }
 
 std::shared_ptr<own3d::ui::ui> own3d::ui::ui::_instance = nullptr;

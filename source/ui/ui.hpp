@@ -39,6 +39,7 @@ namespace own3d::ui {
 		QAction* _menu_action;
 		QAction* _theme_action;
 		QAction* _update_action;
+		QAction* _about_action;
 
 		QSharedPointer<own3d::ui::updater> _updater;
 
@@ -69,6 +70,8 @@ namespace own3d::ui {
 		void menu_theme_triggered(bool);
 
 		void menu_update_triggered(bool);
+
+		void menu_about_triggered(bool);
 
 		void own3d_theme_selected(const QUrl& download_url, const QString& name, const QString& hash);
 
