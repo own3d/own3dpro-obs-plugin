@@ -162,9 +162,10 @@ void own3d::ui::ui::load()
 
 void own3d::ui::ui::unload()
 {
-	{ // Event List Dock
+	if (_eventlist_dock) { // Event List Dock
 		_eventlist_dock->deleteLater();
-		_eventlist_dock        = nullptr;
+		_eventlist_dock = nullptr;
+		_eventlist_dock_action->deleteLater();
 		_eventlist_dock_action = nullptr;
 	}
 
