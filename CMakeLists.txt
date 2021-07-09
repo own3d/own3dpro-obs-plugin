@@ -601,6 +601,8 @@ set(PROJECT_PRIVATE_SOURCE
 	"source/ui/ui-gdpr.cpp"
 	"source/ui/ui-browser.hpp"
 	"source/ui/ui-browser.cpp"
+	"source/ui/ui-dock-chat.hpp"
+	"source/ui/ui-dock-chat.cpp"
 	"source/ui/ui-dock-eventlist.hpp"
 	"source/ui/ui-dock-eventlist.cpp"
 	"source/ui/ui-download.hpp"

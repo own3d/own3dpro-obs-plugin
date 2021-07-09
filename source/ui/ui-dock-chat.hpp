@@ -22,14 +22,14 @@
 #include "obs/obs-browser.hpp"
 
 namespace own3d::ui::dock {
-	class eventlist : public QDockWidget {
+	class chat : public QDockWidget {
 		Q_OBJECT;
 
 		QCefWidget* _browser;
 
 		public:
-		explicit eventlist();
-		~eventlist();
+		explicit chat();
+		~chat();
 
 		QAction* add_obs_dock();
 
