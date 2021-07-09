@@ -375,8 +375,8 @@ namespace obs {
 			if (priv) {
 				std::uint64_t version = static_cast<std::uint64_t>(obs_data_get_int(settings, "version"));
 				priv->migrate(settings, version);
-				obs_data_set_int(settings, "version", static_cast<std::int64_t>(OWN3DTV_VERSION));
-				obs_data_set_string(settings, "commit", OWN3DTV_COMMIT);
+				obs_data_set_int(settings, "version", static_cast<std::int64_t>(OWN3D_VERSION));
+				obs_data_set_string(settings, "commit", OWN3D_COMMIT);
 				priv->load(settings);
 			}
 		} catch (const std::exception& ex) {
@@ -389,8 +389,8 @@ namespace obs {
 		try {
 			if (data) {
 				reinterpret_cast<_instance*>(data)->update(settings);
-				obs_data_set_int(settings, "version", static_cast<std::int64_t>(OWN3DTV_VERSION));
-				obs_data_set_string(settings, "commit", OWN3DTV_COMMIT);
+				obs_data_set_int(settings, "version", static_cast<std::int64_t>(OWN3D_VERSION));
+				obs_data_set_string(settings, "commit", OWN3D_COMMIT);
 			}
 		} catch (const std::exception& ex) {
 			DLOG_ERROR("Uncaught exception in '%s': %s.", __FUNCTION_NAME__, ex.what());
@@ -402,8 +402,8 @@ namespace obs {
 		try {
 			if (data) {
 				reinterpret_cast<_instance*>(data)->save(settings);
-				obs_data_set_int(settings, "version", static_cast<std::int64_t>(OWN3DTV_VERSION));
-				obs_data_set_string(settings, "commit", OWN3DTV_COMMIT);
+				obs_data_set_int(settings, "version", static_cast<std::int64_t>(OWN3D_VERSION));
+				obs_data_set_string(settings, "commit", OWN3D_COMMIT);
 			}
 		} catch (const std::exception& ex) {
 			DLOG_ERROR("Uncaught exception in '%s': %s.", __FUNCTION_NAME__, ex.what());

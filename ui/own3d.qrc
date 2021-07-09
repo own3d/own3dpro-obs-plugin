@@ -1,0 +1,5 @@
+<RCC>
+  <qresource>
+    <file alias="banner">own3d-banner.png</file>
+  </qresource>
+</RCC>

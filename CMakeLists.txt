@@ -77,7 +77,7 @@ if(EXISTS "${CMAKE_CURRENT_LIST_DIR}/.git")
 			list(GET GIT_OUTPUT 0 VERSION_MAJOR)
 			list(GET GIT_OUTPUT 1 VERSION_MINOR)
 			list(GET GIT_OUTPUT 2 VERSION_PATCH)
-			list(GET GIT_OUTPUT 3 VERSION_BUILD)
+			list(GET GIT_OUTPUT 3 VERSION_TWEAK)
 			list(GET GIT_OUTPUT 4 VERSION_COMMIT)
 
 			# Patch needs additional parsing.
@@ -97,16 +97,16 @@ endif()
 set(${PREFIX}VERSION "" CACHE STRING "Override OWN3D.Pro version with this string. Format: Major.Minor.Patch[Suffix][-Tweak[-Commit8c]]")
 if(${PREFIX}VERSION)
 	string(REPLACE "-" "." T_VERSION "${${PREFIX}VERSION}")
-	string(REPLACE "." ";" T_VERSION "${${PREFIX}VERSION}")
+	string(REPLACE "." ";" T_VERSION "${T_VERSION}")
 
 	list(LENGTH T_VERSION T_VERSIONLEN)
 	list(GET T_VERSION 0 VERSION_MAJOR)
 	list(GET T_VERSION 1 VERSION_MINOR)
 	list(GET T_VERSION 2 VERSION_PATCH)
 	if (T_VERSIONLEN GREATER_EQUAL 3)
-		list(GET T_VERSION 3 VERSION_BUILD)
+		list(GET T_VERSION 3 VERSION_TWEAK)
 	else()
-		set(VERSION_BUILD 0)
+		set(VERSION_TWEAK 0)
 	endif()
 	if (T_VERSIONLEN GREATER_EQUAL 4)
 		list(GET T_VERSION 4 VERSION_COMMIT)
@@ -117,8 +117,8 @@ if(${PREFIX}VERSION)
 	# Patch needs additional parsing.
 	# This may be a [0-9]*[a-z]*[0-9]+ string.
 	string(REGEX MATCHALL "([0-9]+)([a-z0-9]+)" T_MATCHES "${VERSION_PATCH}")
-	set(VERSION_PATCH "${CMAKE_MATCH_1}")
 	if(CMAKE_MATCH_2)
+		set(VERSION_TWEAK "${CMAKE_MATCH_1}")
 		set(VERSION_SUFFIX "${CMAKE_MATCH_2}")
 	else()
 		set(VERSION_SUFFIX "")
@@ -597,12 +597,16 @@ set(PROJECT_PRIVATE_SOURCE
 	"source/obs/obs-source-factory.hpp"
 	"source/ui/ui.hpp"
 	"source/ui/ui.cpp"
+	"source/ui/ui-gdpr.hpp"
+	"source/ui/ui-gdpr.cpp"
 	"source/ui/ui-browser.hpp"
 	"source/ui/ui-browser.cpp"
 	"source/ui/ui-dock-eventlist.hpp"
 	"source/ui/ui-dock-eventlist.cpp"
 	"source/ui/ui-download.hpp"
 	"source/ui/ui-download.cpp"
+	"source/ui/ui-updater.hpp"
+	"source/ui/ui-updater.cpp"
 	"source/util/utility.hpp"
 	"source/util/utility.cpp"
 	"source/util/curl.hpp"
@@ -613,6 +617,8 @@ set(PROJECT_PRIVATE_SOURCE
 	"source/util/zip.cpp"
 )
 set(PROJECT_UI
+	"ui/own3d.qrc"
+	"ui/gdpr.ui"
 	"ui/theme-download.ui"
 )
 set(PROJECT_PRIVATE
@@ -688,6 +694,13 @@ if(D_PLATFORM_WINDOWS)
 		NOMDI
 		NOINOUT
 	)
+endif()
+
+if(NOT EXISTS "${PROJECT_SOURCE_DIR}/third-party/nlohmann-json/single_include")
+	message(FATAL_ERROR "${LOGPREFIX} Please make sure to update git submodules to their latest supported version.")
+	return()
+else()
+	list(APPEND PROJECT_INCLUDE_DIRS "${PROJECT_SOURCE_DIR}/third-party/nlohmann-json/single_include")
 endif()
 
 source_group(TREE "${PROJECT_SOURCE_DIR}/data" PREFIX "Data Files" FILES ${PROJECT_DATA})

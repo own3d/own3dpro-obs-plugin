@@ -26,11 +26,11 @@
 #undef strtoll
 
 #ifdef WIN32
-#define OWN3D_USER_AGENT "OWN3D Pro OBS Plugin/" OWN3DTV_VERSION_STRING " (Windows)"
+#define OWN3D_USER_AGENT "OWN3D Pro OBS Plugin/" OWN3D_VERSION_STRING " (Windows)"
 #elif APPLE
-#define OWN3D_USER_AGENT "OWN3D Pro OBS Plugin/" OWN3DTV_VERSION_STRING " (MacOS)"
+#define OWN3D_USER_AGENT "OWN3D Pro OBS Plugin/" OWN3D_VERSION_STRING " (MacOS)"
 #else
-#define OWN3D_USER_AGENT "OWN3D Pro OBS Plugin/" OWN3DTV_VERSION_STRING " (Unix)"
+#define OWN3D_USER_AGENT "OWN3D Pro OBS Plugin/" OWN3D_VERSION_STRING " (Unix)"
 #endif
 
 // Common Global defines

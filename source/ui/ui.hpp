@@ -16,18 +16,33 @@
 
 #pragma once
 #include <QAction>
+#include <QMenu>
 #include <memory>
 #include <obs-frontend-api.h>
 #include "ui-browser.hpp"
 #include "ui-dock-eventlist.hpp"
 #include "ui-download.hpp"
+#include "ui-gdpr.hpp"
+#include "ui-updater.hpp"
 
 namespace own3d::ui {
 	class ui : public QObject {
 		Q_OBJECT;
 
 		private:
-		QAction*            _action;
+		QTranslator* _translator;
+
+		QSharedPointer<own3d::ui::gdpr> _gdpr;
+		bool                            _privacypolicy;
+
+		QMenu*   _menu;
+		QAction* _menu_action;
+		QAction* _theme_action;
+		QAction* _update_action;
+		QAction* _about_action;
+
+		QSharedPointer<own3d::ui::updater> _updater;
+
 		own3d::ui::browser* _theme_browser;
 
 		own3d::ui::installer* _download;
@@ -48,7 +63,15 @@ namespace own3d::ui {
 
 		private slots:
 		; // Needed by some linters.
-		void own3d_action_triggered(bool);
+		void on_gdpr_accept();
+
+		void on_gdpr_decline();
+
+		void menu_theme_triggered(bool);
+
+		void menu_update_triggered(bool);
+
+		void menu_about_triggered(bool);
 
 		void own3d_theme_selected(const QUrl& download_url, const QString& name, const QString& hash);
 
