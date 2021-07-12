@@ -1,16 +1,16 @@
 # Integration of the OWN3D service into OBS Studio
 # Copyright (C) 2020 own3d media GmbH <support@own3d.tv>
-# 
+#
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation, either version 3 of the License, or
 # (at your option) any later version.
-# 
+#
 # This program is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
-# 
+#
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
@@ -164,9 +164,9 @@ set(PROJECT_VERSION_STRING ${VERSION_STRING})
 ################################################################################
 
 # Search Path
-set(CMAKE_MODULE_PATH 
-	"${CMAKE_CURRENT_SOURCE_DIR}/cmake/clang" 
-	"${CMAKE_CURRENT_SOURCE_DIR}/cmake/modules" 
+set(CMAKE_MODULE_PATH
+	"${CMAKE_CURRENT_SOURCE_DIR}/cmake/clang"
+	"${CMAKE_CURRENT_SOURCE_DIR}/cmake/modules"
 	"${CMAKE_CURRENT_SOURCE_DIR}/cmake"
 )
 
@@ -331,7 +331,7 @@ if(STANDALONE)
 			return()
 		endif()
 	endif()
-	
+
 	# Download libOBS
 	download_project(
 		PROJ libobs
@@ -357,7 +357,7 @@ if(STANDALONE AND NOT D_PLATFORM_LINUX)
 		${PREFIX}DOWNLOAD_OBSDEPS_URL
 		${PREFIX}DOWNLOAD_OBSDEPS_HASH
 	)
-	
+
 	# Allow overriding what version we build against.
 	if(${PREFIX}DOWNLOAD_OBSDEPS_URL)
 		set(_DOWNLOAD_OBSDEPS_URL ${PREFIX}DOWNLOAD_OBSDEPS_URL)
@@ -396,7 +396,7 @@ if(STANDALONE AND NOT D_PLATFORM_LINUX)
 			return()
 		endif()
 	endif()
-	
+
 	# Download libOBS
 	download_project(
 		PROJ obsdeps
@@ -427,7 +427,7 @@ if(STANDALONE AND NOT D_PLATFORM_LINUX)
 			${PREFIX}DOWNLOAD_QT_URL
 			${PREFIX}DOWNLOAD_QT_HASH
 		)
-	
+
 		# Allow overriding what version we build against.
 		if(${PREFIX}DOWNLOAD_QT_URL)
 			set(_DOWNLOAD_QT_URL ${PREFIX}DOWNLOAD_QT_URL)
@@ -467,7 +467,7 @@ if(STANDALONE AND NOT D_PLATFORM_LINUX)
 				return()
 			endif()
 		endif()
-		
+
 		download_project(
 			PROJ qt
 			URL "${_DOWNLOAD_QT_URL}"
@@ -475,14 +475,14 @@ if(STANDALONE AND NOT D_PLATFORM_LINUX)
 			DOWNLOAD_NO_PROGRESS OFF
 			UPDATE_DISCONNECTED OFF
 		)
-		
+
 		set(Qt5_DIR "${qt_SOURCE_DIR}" CACHE STRING "Path to Qt5")
 		if (D_PLATFORM_WINDOWS)
 			if (D_PLATFORM_ARCH_X86)
 				if (D_PLATFORM_BITS EQUAL 64)
-					CacheSet(Qt5_DIR "${qt_SOURCE_DIR}/lib/cmake/Qt5/")
+					CacheSet(Qt5_DIR "${qt_SOURCE_DIR}/msvc2019_64/lib/cmake/Qt5/")
 				elseif (D_PLATFORM_BITS EQUAL 32)
-					CacheSet(Qt5_DIR "${qt_SOURCE_DIR}/lib/cmake/Qt5/")
+					CacheSet(Qt5_DIR "${qt_SOURCE_DIR}/msvc2019/lib/cmake/Qt5/")
 				endif()
 			endif()
 		elseif(D_PLATFORM_MAC)
@@ -533,12 +533,12 @@ if(WIN32)
 	set(PROJECT_COPYRIGHT "${PROJECT_AUTHORS} © ${PROJECT_COPYRIGHT_YEARS}")
 	set(PROJECT_LEGAL_TRADEMARKS_1 "")
 	set(PROJECT_LEGAL_TRADEMARKS_2 "")
-	
+
 	configure_file(
 		"cmake/version.rc.in"
 		"${PROJECT_BINARY_DIR}/cmake/version.rc"
 		@ONLY
-	)	
+	)
 endif()
 
 # QT5
@@ -806,7 +806,7 @@ if(CMAKE_CXX_COMPILER_ID STREQUAL "MSVC" OR (WIN32 AND CMAKE_CXX_COMPILER_ID STR
 	# - Enable multi-processor compiling.
 
 	# Build with dynamic MSVC linkage.
-    target_compile_options(${PROJECT_NAME} PRIVATE 
+    target_compile_options(${PROJECT_NAME} PRIVATE
         $<$<CONFIG:>:/MD>
         $<$<CONFIG:Debug>:/MDd>
         $<$<CONFIG:Release>:/MD>
@@ -815,7 +815,7 @@ if(CMAKE_CXX_COMPILER_ID STREQUAL "MSVC" OR (WIN32 AND CMAKE_CXX_COMPILER_ID STR
     )
 
 	# Enable most useful warnings.
-	set(DISABLED_WARNINGS 
+	set(DISABLED_WARNINGS
 		"/wd4061" "/wd4100" "/wd4180" "/wd4201" "/wd4464" "/wd4505" "/wd4514"
 		"/wd4571" "/wd4623" "/wd4625" "/wd4626" "/wd4668" "/wd4710" "/wd4774"
 		"/wd4820" "/wd5026" "/wd5027" "/wd5039" "/wd5045" "/wd26812"
@@ -832,12 +832,12 @@ if(CMAKE_CXX_COMPILER_ID STREQUAL "MSVC" OR (WIN32 AND CMAKE_CXX_COMPILER_ID STR
 	target_compile_options(${PROJECT_NAME} PRIVATE "/MP")
 elseif(CMAKE_CXX_COMPILER_ID STREQUAL "Clang" OR CMAKE_CXX_COMPILER_ID STREQUAL "AppleClang" OR CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
 	message(STATUS "${LOGPREFIX} Applying custom flags for GNU style build.")
-	
+
 	# Clang/AppleClang/GNU
 	# - Don't export by default. (Temporarily disabled)
 	# - Enable all and extra warnings.
-	
-	target_compile_options(${PROJECT_NAME} PRIVATE 
+
+	target_compile_options(${PROJECT_NAME} PRIVATE
 		"-Wall"
 		"-Wextra"
 	)
@@ -866,31 +866,82 @@ endif()
 
 # Apple otool
 if(D_PLATFORM_MAC)
+	function(mac_get_linker_id)
+		cmake_parse_arguments(
+			_MGLI "" "TARGET;OUTPUT" "" ${ARGN}
+		)
+
+		get_target_property(_MGLI_TARGET_LOC ${_MGLI_TARGET} IMPORTED_LOCATION)
+		if(NOT _MGLI_TARGET_LOC)
+			get_target_property(_MGLI_TARGET_LOC ${_MGLI_TARGET} IMPORTED_LOCATION_MINSIZEREL)
+		endif()
+		if(NOT _MGLI_TARGET_LOC)
+			get_target_property(_MGLI_TARGET_LOC ${_MGLI_TARGET} IMPORTED_LOCATION_RELEASE)
+		endif()
+		if(NOT _MGLI_TARGET_LOC)
+			get_target_property(_MGLI_TARGET_LOC ${_MGLI_TARGET} IMPORTED_LOCATION_RELWITHDEBINFO)
+		endif()
+		if(NOT _MGLI_TARGET_LOC)
+			get_target_property(_MGLI_TARGET_LOC ${_MGLI_TARGET} IMPORTED_LOCATION_DEBUG)
+		endif()
+
+		execute_process(
+			COMMAND otool -D ${_MGLI_TARGET_LOC}
+			WORKING_DIRECTORY ${CMAKE_CURRENT_LIST_DIR}
+			RESULT_VARIABLE _MGLI_RES
+			OUTPUT_VARIABLE _MGLI_LINK OUTPUT_STRIP_TRAILING_WHITESPACE
+			ERROR_VARIABLE _MGLI_ERR ERROR_STRIP_TRAILING_WHITESPACE ERROR_QUIET
+		)
+		STRING(REGEX REPLACE ";" "\\\\;" _MGLI_LINK "${_MGLI_LINK}")
+		STRING(REGEX REPLACE "\n" ";" _MGLI_LINK "${_MGLI_LINK}")
+		list(POP_FRONT _MGLI_LINK)
+
+		set(${_MGLI_OUTPUT} "${_MGLI_LINK}" PARENT_SCOPE)
+	endfunction()
+
 	# OBS
+	mac_get_linker_id(TARGET libobs OUTPUT T_OBS_LINK)
 	add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
-		COMMAND install_name_tool ARGS -change "@rpath/libobs.0.dylib" "@executable_path/../Frameworks/libobs.0.dylib" $<TARGET_FILE:${PROJECT_NAME}>
+		COMMAND install_name_tool ARGS -change "${T_OBS_LINK}" "@executable_path/../Frameworks/libobs.0.dylib" $<TARGET_FILE:${PROJECT_NAME}>
 	)
 	message(STATUS "${LOGPREFIX} Added post-build step for adjusting libobs linking path.")
 
 	# OBS Front-End API
+	mac_get_linker_id(TARGET obs-frontend-api OUTPUT T_OBSFE_LINK)
 	add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
-		COMMAND install_name_tool ARGS -change "@rpath/libobs-frontend-api.dylib" "@executable_path/../Frameworks/libobs-frontend-api.dylib" $<TARGET_FILE:${PROJECT_NAME}>
+		COMMAND install_name_tool ARGS -change "${T_OBSFE_LINK}" "@executable_path/../Frameworks/libobs-frontend-api.dylib" $<TARGET_FILE:${PROJECT_NAME}>
 	)
 	message(STATUS "${LOGPREFIX} Added post-build step for adjusting libobs-frontend-api linking path.")
 
 	# Qt5
-	string(LENGTH "${Qt5_DIR}" T_PATH_LEN)
-	math(EXPR T_PATH_LEN "${T_PATH_LEN} - 10")
-	string(SUBSTRING "${Qt5_DIR}" 0 ${T_PATH_LEN} T_PATH)
+	mac_get_linker_id(TARGET Qt5::Core OUTPUT T_QT5CORE_LINK)
+	mac_get_linker_id(TARGET Qt5::Gui OUTPUT T_QT5GUI_LINK)
+	mac_get_linker_id(TARGET Qt5::Widgets OUTPUT T_QT5WIDGETS_LINK)
 	add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
 	# - QtCore
-		COMMAND install_name_tool ARGS -change "${T_PATH}/QtCore.framework/Versions/5/QtCore" "@executable_path/../Frameworks/QtCore.framework/Versions/5/QtCore" $<TARGET_FILE:${PROJECT_NAME}>
+		COMMAND install_name_tool ARGS -change "${T_QT5CORE_LINK}" "@executable_path/../Frameworks/QtCore.framework/Versions/5/QtCore" $<TARGET_FILE:${PROJECT_NAME}>
 	# - QtGui
-		COMMAND install_name_tool ARGS -change "${T_PATH}/QtGui.framework/Versions/5/QtGui" "@executable_path/../Frameworks/QtGui.framework/Versions/5/QtGui" $<TARGET_FILE:${PROJECT_NAME}>
+		COMMAND install_name_tool ARGS -change "${T_QT5GUI_LINK}" "@executable_path/../Frameworks/QtGui.framework/Versions/5/QtGui" $<TARGET_FILE:${PROJECT_NAME}>
 	# - QtWidgets
-		COMMAND install_name_tool ARGS -change "${T_PATH}/QtWidgets.framework/Versions/5/QtWidgets" "@executable_path/../Frameworks/QtWidgets.framework/Versions/5/QtWidgets" $<TARGET_FILE:${PROJECT_NAME}>
+		COMMAND install_name_tool ARGS -change "${T_QT5WIDGETS_LINK}" "@executable_path/../Frameworks/QtWidgets.framework/Versions/5/QtWidgets" $<TARGET_FILE:${PROJECT_NAME}>
 	)
-	message(STATUS "${LOGPREFIX} Added post-build step for adjusting Qt5 linking path (Found: ${Qt5_DIR} resolved to ${T_PATH}).")
+	message(STATUS "${LOGPREFIX} Added post-build step for adjusting Qt5::Core linking path (Found: ${Qt5_DIR} resolved to ${T_QT5CORE_LINK}).")
+	message(STATUS "${LOGPREFIX} Added post-build step for adjusting Qt5::Gui linking path (Found: ${Qt5_DIR} resolved to ${T_QT5GUI_LINK}).")
+	message(STATUS "${LOGPREFIX} Added post-build step for adjusting Qt5::Widgets linking path (Found: ${Qt5_DIR} resolved to ${T_QT5WIDGETS_LINK}).")
+
+	# zlib
+	mac_get_linker_id(TARGET ZLIB::ZLIB OUTPUT T_ZLIB_LINK)
+	add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
+		COMMAND install_name_tool ARGS -change "${T_ZLIB_LINK}" "@loader_path/libz.dylib" $<TARGET_FILE:${PROJECT_NAME}>
+	)
+	message(STATUS "${LOGPREFIX} Added post-build step for adjusting zlib linking path.")
+
+	# libzip
+	mac_get_linker_id(TARGET libzip::zip OUTPUT T_LIBZIP_LINK)
+	add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
+		COMMAND install_name_tool ARGS -change "${T_LIBZIP_LINK}" "@loader_path/libzip.dylib" $<TARGET_FILE:${PROJECT_NAME}>
+	)
+	message(STATUS "${LOGPREFIX} Added post-build step for adjusting libzip linking path.")
 endif()
 
 ################################################################################
@@ -917,7 +968,7 @@ else()
 				OPTIONAL
 			)
 		endif()
-		
+
 		add_custom_target(
 			PACKAGE_7Z
 			${CMAKE_COMMAND} -E tar cfv "${_PACKAGE_FULL_NAME}.7z" --format=7zip --
@@ -988,7 +1039,7 @@ else()
 				FILE_PERMISSIONS WORLD_EXECUTE;WORLD_READ;OWNER_EXECUTE;OWNER_READ;OWNER_WRITE;GROUP_EXECUTE;GROUP_READ;GROUP_WRITE
 				DIRECTORY_PERMISSIONS WORLD_EXECUTE;WORLD_READ;OWNER_EXECUTE;OWNER_READ;OWNER_WRITE;GROUP_EXECUTE;GROUP_READ;GROUP_WRITE
 			)
-		
+
 			add_custom_target(
 				PACKAGE_7Z
 				${CMAKE_COMMAND} -E tar cfv "${_PACKAGE_FULL_NAME}.7z" --format=7zip --
