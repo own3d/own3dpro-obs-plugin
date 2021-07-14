@@ -109,6 +109,8 @@ namespace own3d {
 
 	bool is_sandbox();
 
+	std::string get_sandbox_url();
+
 	std::string get_api_endpoint(std::string_view const args = "");
 
 	std::string get_web_endpoint(std::string_view const args = "");
